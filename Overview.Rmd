@@ -1,5 +1,5 @@
 ---
-title: "Overview of the business problem"
+title: "Overview of the airbnb business problem"
 author: "Zhuoya Wang, Henry Deng, Teguh Samudra, Suguna Menon"
 date: "15/09/2019"
 output:
@@ -11,7 +11,11 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Business Problem
+
+Factors influencing the business growth of home sharing services like Airbnb
+
+
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
