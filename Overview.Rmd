@@ -11,26 +11,49 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Business Problem
+# Business Problem
 
-Factors influencing the business growth of home sharing services like Airbnb
+## Factors influencing the business growth of home sharing services like Airbnb
+
+Starting in 2008, Airbnb seized the market opportunity. It aimed at offering travelers a “home away from home” and letting homeowners monetize their spaces. As an industry pioneer, it took Airbnb just 10 years to share a weighted part of the hospitality market. Nowadays, their footprint reaches not only metropolitan tourism cities like NY, Paris and Tokyo, also mid-sized cities like Seattle and Vancouver. Until today, Airbnb has hosted 400 million guests since its launch. 
+It becomes more attractive for us when we research the whole industry and learn more about stories behind Airbnb. For example, how did Airbnb start the partnership with their very first host and guest? The Airbnb’s average per-night price for reservations is only $80. What is their revenue and profit model as a mediator between hosts and guests? We know that Airbnb already stands out in the traditional market, what will be their next step to increase the value of this company?
+Among those interesting questions, what attracts us most is the question -- What are main factors that drive home-sharing services a market leader? By knowing what Airbnb’scomparative and absolute advantages, it will help the industry go further.
+
+On the basis of our analysis, we have derived some factors which might drive the Airbnb business.
+
+1. LOCATION: Location and the neighbourhood of the airbnb hosts affects the business. If they target the wrong neighbourhood, they might lose a potential profit. A customer generally prefers good ambience, peacefulness, easy accessibility to the neighbourhood. So, expanding the business in good locations is an important factor.
+2. POPULATION: Population can drive the airbnb pricing. If population is more, there is a fair chance that the demand for housing is more. With increase in this demand, the housing prices will also increase. This indirectly will lead to high airbnb pricing. So, the population density and pricing can affect the airbnb business growth.
+3. CUSTOMER DEMOGRAPHIC: Customers can be categorized into young, middle aged and old aged. In general, young and middle aged people are the ones who travel more with the intention of studies or as part of their profession and hence, they are ones who make more bookings in airbnb. So, probably, airbnb should target the customers based on these demographics. 
+4. NUMBER OF AIRBNB UNITS PER CITY: Number of Airbnb units shows that more host are willing to list their units on airbnb because of the high demand or it being profitable. Low number of units could imply that the airbnb business is not profitable enough for the hosts. It may be because of low number of visitors in the city or the visitors prefer booking hotels more than airbnbs for their stay.
+5. NUMBER OF BOOKINGS: Number of bookings help us to determine if a city receive a high number of visitors and if there is a significant seasonal impact. Number of bookings throughout the year might vary depending on the season. For example, Toronto might be a popular destination during the summer and there might be a lot more bookings in the summer. However, when winter comes, Toronto might receive way less visitor and the number of airbnb booking drops significantly. A ‘seasonal host’ could be benefited from this information.
+6. REVENUE GENERATED PER YEAR: Determined by the parameters that we mentioned above. If a city is popular but does not generate enough revenue growth that can mean the market is already saturated. It might not worth the effort and resources to expand in that city since acquiring more host would not lead to revenue growth.
+
+## Datasources
+
+The data source for our project is Opendatasoft, a public platform to access, reuse and share data. The dataset is in CSV format and is approximately 1.9 GB in size. It has 89 columns and 500,000 rows.
+
+The key variables/columns that we will be using to analyze the data and get actionable insights are-
+
+1. Number of reviews: This column will be used to identify the number of bookings. Ideally, it 50% of the customers who have booked an airbnb provide reviews. So we can safely asuume this and move forward with our analysis.
+2. Property Type
+3. Host Location
+4. Zipcode
+5. Host total listings count
+6. Host Response Time
+7. Total price
+8. Cancellation policy
+count of bookings - review count
 
 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+population data
+house pricing
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+Few samples of data analysis-
+ 
+
+```{r}
+data = read.csv(file = 'D:/UBC/Period 1/BAIT 507/Final project/Data/airbnb-listings.csv', header = TRUE, sep = ';')
+sample = data.head(100)
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
