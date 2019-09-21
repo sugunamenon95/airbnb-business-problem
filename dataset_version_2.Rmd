@@ -132,9 +132,10 @@ file_cna2$calendar.last.scraped <- as.Date(file_cna2$calendar.last.scraped, form
 #remove 17-Neighborhood.group cleansed
 #remove 22-smart location
 #remove 24-country.country code already exist. 
+#remove 34
 #remove 40-cleaning fee
 #remove 66-geolocation(data already contain longitude and latitude)
-col_remove <- c(5, 14, 16, 17, 22, 24, 40, 66)
+col_remove <- c(5, 14, 16, 17, 22, 24, 34, 40, 66)
 file_cna3 <- file_cna2[-col_remove]
 ```
 
@@ -167,8 +168,12 @@ unique_key2 <- file_cna3 %>%
 print(unique_key2)
 ```
 
-
-```{r fixCityNames}
-
-
+```{r}
+price_v_ratings_ca <- file_cna3 %>%
+                  filter(country.code == 'US' )
+                  group_by(price, review.scores.rating) #%>%
+ggplot(price_v_ratings, aes(x = price_v_ratings$price, y = price_v_ratings$review.scores.rating )) + geom_point()
+              
 ```
+
+
