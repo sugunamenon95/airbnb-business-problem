@@ -169,11 +169,37 @@ print(unique_key2)
 ```
 
 ```{r}
-price_v_ratings_ca <- file_cna3 %>%
-                  filter(country.code == 'US' )
-                  group_by(price, review.scores.rating) #%>%
+price_v_ratings_us <- file_cna3 %>%
+                  filter(country.code == 'US' ) %>%
+                  group_by(price, review.scores.rating)
+
 ggplot(price_v_ratings, aes(x = price_v_ratings$price, y = price_v_ratings$review.scores.rating )) + geom_point()
               
 ```
 
 
+```{r connecting, eval=TRUE}
+con <- dbConnect(PostgreSQL(),
+                 host = 'localhost',
+                 port = 5432,
+                 user = "postgres",
+                 password = "ForBaitOnly!",
+                 dbname = "final")
+```
+
+
+```{r writeTable, eval=FALSE}
+dbWriteTable(con,
+              name = "airbnb",
+              file_cna3)
+```
+
+
+```{r listTables, eval=FALSE}
+dbListTables(con)
+```
+
+```{r readTable, eval=TRUE}
+table_data <- dbReadTable(conn = con, name = "airbnb")
+  
+```
