@@ -153,3 +153,22 @@ zip_price_avg_us <- file_cna3 %>%
                     arrange(desc(avg_price))
 
 ```
+
+
+```{r checkUniqueKey}
+unique_key <- file_cna3 %>%
+                distinct(host.id) %>%
+                nrow
+print(unique_key)
+
+unique_key2 <- file_cna3 %>%
+                distinct(x) %>%
+                nrow
+print(unique_key2)
+```
+
+
+```{r fixCityNames}
+
+
+```
