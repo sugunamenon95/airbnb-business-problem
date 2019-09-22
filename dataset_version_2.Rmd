@@ -156,24 +156,24 @@ zip_price_avg_us <- file_cna3 %>%
 ```
 
 
-```{r checkUniqueKey}
+{r checkUniqueKey}
 unique_key <- file_cna3 %>%
                 distinct(host.id) %>%
                 nrow
 print(unique_key)
 
 unique_key2 <- file_cna3 %>%
-                distinct(x) %>%
+                distinct(host.id) %>%
                 nrow
 print(unique_key2)
-```
+
 
 ```{r}
 price_v_ratings_us <- file_cna3 %>%
                   filter(country.code == 'US' ) %>%
                   group_by(price, review.scores.rating)
 
-ggplot(price_v_ratings, aes(x = price_v_ratings$price, y = price_v_ratings$review.scores.rating )) + geom_point()
+ggplot(price_v_ratings_us, aes(x = price_v_ratings_us$price, y = price_v_ratings_us$review.scores.rating )) + geom_point()
               
 ```
 
@@ -183,17 +183,49 @@ con <- dbConnect(PostgreSQL(),
                  host = 'localhost',
                  port = 5432,
                  user = "postgres",
-                 password = "ForBaitOnly!",
-                 dbname = "final")
+                 password = "sweetshe09",
+                 dbname = "Airbnb")
 ```
 
+```{r renaming column names}
+
+names(file_cna3)[5] <- "host_id"
+names(file_cna3)[6] <- "host_since"
+names(file_cna3)[7] <- "host_location"
+names(file_cna3)[8] <- "host_response_time"
+names(file_cna3)[11] <- "host_listings_count"
+names(file_cna3)[12] <- "host_total_listings_count"
+names(file_cna3)[21] <- "property_type"
+names(file_cna3)[22] <- "room_type"
+names(file_cna3)[35] <- "minimum_nights"
+names(file_cna3)[44] <- "number_of_reviews"
+names(file_cna3)[47] <- "review_score_rating"
+names(file_cna3)[48] <- "review_score_accuracy"
+names(file_cna3)[49] <- "review_score_cleanliness"
+names(file_cna3)[50] <- "review_score_checkin"
+names(file_cna3)[52] <- "review_score_location"
+names(file_cna3)[55] <- "cancellation_policy"
+```
+
+
+```{r create dataframes for tables to be created in the database}
+
+host_data <- file_cna3[c('host_id', 'host_since', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')]
+
+
+location <- file_cna3[c('zipcode', 'latitude', 'longitude', 'city', 'state')]
+
+property <- file_cna3[c('zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accomodates', 'price', 'number_of_reviews', 'cancellation_policy')]
+
+reviews <- file_cna3[c('review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
+
+```
 
 ```{r writeTable, eval=FALSE}
 dbWriteTable(con,
-              name = "airbnb",
-              file_cna3)
+              name = "host",
+              host_data)
 ```
-
 
 ```{r listTables, eval=FALSE}
 dbListTables(con)
