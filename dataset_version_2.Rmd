@@ -54,32 +54,33 @@ colnames(filepath_csv) <- tolower(colnames(filepath_csv))
 if (!file.exists('data/output/airbnb-listings.rds')) {
   file_raw <- read.csv("data/input/airbnb-listings.csv",header = TRUE, sep = ';')
   file_reduced <- file_raw %>%
-    filter(Country.code == 'US') %>%
-    select(host_id = "host.id",
-           host_since = "host.since",
-           host_location = "host.location",
-           host_response_time = "host.response.time" ,
-           host_listings_count = "host.total.listings.count",
-           host_total_listings_count = "host.listings.count",
-           property_type = "property.type",
-           room_type = "room.type",
-           minimum_nights = "maximum.nights",
-           number_of_reviews = "number.of.reviews",
-           review_score_rating =  "review.scores.rating",
-           review_score_accuracy = "review.scores.accuracy",
-           review_score_cleanliness = "review.scores.cleanliness",
-           review_score_checkin = "review.scores.checkin",
-           review_score_location = "review.scores.location",
-           cancellation_policy = "cancellation.policy",
-           city = "city" ,
-           state = "state",
-           zipcode = "zipcode",
-           latitude = "latitude",
-           longitude = "longitude",
-           accommodates = "accommodates",
-           price = "price",
-           country_code = 'country.code'
-           ) 
+    #filter(Country.Code == 'US')
+    select(host_id = 'Host.ID',
+           host_since = "Host.Since",
+           host_location = "Host.Location",
+           host_response_time = "Host.Response.Time",
+           host_listings_count = "Host.Listings.Count",
+           host_total_listings_count = "Host.Total.Listings.Count",
+           property_type = "Property.Type",
+           room_type = "Room.Type",
+           minimum_nights = "Minimum.Nights",
+           number_of_reviews = "Number.of.Reviews",
+           review_score_rating =  "Review.Scores.Rating",
+           review_score_accuracy = "Review.Scores.Accuracy",
+           review_score_cleanliness = "Review.Scores.Cleanliness",
+           review_score_checkin = "Review.Scores.Checkin",
+           review_score_location = "Review.Scores.Location",
+           cancellation_policy = "Cancellation.Policy",
+           city = "City",
+           state = "State",
+           zipcode = "Zipcode",
+           latitude = "Latitude",
+           longitude = "Longitude",
+           accommodates = "Accommodates",
+           price = "Price",
+           country_code = "Country.Code"
+           ) %>%
+          filter(country_code == 'US')
   if (!file.exists('data/output')) {
     dir.create('data/output')
   }
