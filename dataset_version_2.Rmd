@@ -80,7 +80,16 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
            price = "Price",
            country_code = "Country.Code"
            ) %>%
-          filter(country_code == 'US')
+                filter(country_code == 'US') %>%
+                  filter(property_type != 'Casa particular' |
+                         property_type != 'Train' |
+                         property_type != 'Plane' |
+                         property_type != 'Parking Space' |
+                         property_type != 'Van' |
+                        property_type != '2017-04-02' |
+                       property_type != 'Car'|
+                         property_type != 'Boat')
+                
   if (!file.exists('data/output')) {
     dir.create('data/output')
   }
