@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1569793762265.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "86ED67FD",
+    "lastKnownWriteTime" : 1569538131,
+    "last_content_update" : 1569538131,
+    "path" : "C:/Users/User/Google Drive/period1/data mgmt/Inclass Project/Migration/Migration/migration.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "16,16",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

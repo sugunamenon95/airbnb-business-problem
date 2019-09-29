@@ -81,52 +81,24 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
            country_code = "Country.Code"
            ) %>%
                 filter(country_code == 'US') %>%
-                  filter(property_type != 'Casa particular' |
-                         property_type != 'Train' |
-                         property_type != 'Plane' |
-                         property_type != 'Parking Space' |
-                         property_type != 'Van' |
-                        property_type != '2017-04-02' |
-                       property_type != 'Car'|
-                         property_type != 'Boat')
+                  filter(!(property_type == 'Casa particular' |
+                         property_type == 'Train' |
+                         property_type == 'Plane' |
+                         property_type == 'Parking Space' |
+                         property_type == 'Van' |
+                        property_type == '2017-04-02' |
+                       property_type == 'Car'|
+                         property_type == 'Boat'))
                 
   if (!file.exists('data/output')) {
     dir.create('data/output')
   }
-  saveRDS(file_reduced, 'data/output/airbnb-ratings.rds')
+  saveRDS(file_reduced, 'data/output/airbnb-listings.rds')
 } else {
-  file_reduced <- readRDS('data/output/airbnb-ratings.rds')
+  file_reduced <- readRDS('data/output/airbnb-listings.rds')
 }
 
 ```
-
-```{r}
-
-colnames(file_raw)
-file_reduced <- file_raw %>%
-    filter(Country.code == 'US')
-```
-
-```{r Exclude irrelevant property types}
-exclude_type <- c('Casa particular', 'Train', 'Plane', ' ', 'Parking Space', 'Van', '2017-04-02', 'Car', 'Boat')
-
-df_type_excluded <- df[!(df$property.type == 'Casa particular' |
-                         df$property.type == 'Train' |
-                         df$property.type == 'Plane' |
-                         df$property.type == 'Parking Space' |
-                         df$property.type == 'Van' |
-                        df$property.type == '2017-04-02' |
-                       df$property.type == 'Car'|
-                         df$property.type == 'Boat'
-                       )
-                       ,]
-```
-
-
-```{r Filter out data for the country US}
-df_na <- df[(df$country.code == 'US'), ]
-```
-
 
 
 
