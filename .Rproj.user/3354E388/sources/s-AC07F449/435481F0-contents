@@ -1,0 +1,288 @@
+---
+title: "airbnb_north_america"
+author: "Teguh Samudra"
+date: "9/15/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Libraries
+
+```{r loadLibraries}
+#Load PostgreSQL, knitr, dplyr
+library(RPostgreSQL)
+library(knitr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(readr)
+library(tidyr)
+
+```
+
+
+```{r getAirbnbListing}
+
+if (!dir.exists("data/input/")) {
+  if (!dir.exists("data")) {
+    dir.create("data")
+  }
+  dir.create("data/input")
+}
+
+if (!file.exists("data/input/airbnb-listings.csv")) {
+  download.file("https://public.opendatasoft.com/explore/dataset/airbnb-listings/download/?format=csv&timezone=America/Los_Angeles&use_labels_for_header=true",
+  "data/input/airbnb-listings.csv")
+}
+
+```
+{r Count total rows and columns in dataset}
+file_csv_raw <- "data/input/airbnb-ratings.csv"
+filepath_csv <- read.csv(file_csv_raw, header = TRUE, sep = ';')
+
+row_total_dirty <- nrow(filepath_csv)
+col_total_dirty <- ncol(filepath_csv)
+colnames(filepath_csv) <- tolower(colnames(filepath_csv))
+
+
+
+```{r cleanData}
+
+if (!file.exists('data/output/airbnb-listings.rds')) {
+  file_raw <- read.csv("data/input/airbnb-listings.csv",header = TRUE, sep = ';')
+  file_reduced <- file_raw %>%
+    #filter(Country.Code == 'US')
+    select(host_id = 'Host.ID',
+           host_since = "Host.Since",
+           host_location = "Host.Location",
+           host_response_time = "Host.Response.Time",
+           host_listings_count = "Host.Listings.Count",
+           host_total_listings_count = "Host.Total.Listings.Count",
+           property_type = "Property.Type",
+           room_type = "Room.Type",
+           minimum_nights = "Minimum.Nights",
+           number_of_reviews = "Number.of.Reviews",
+           review_score_rating =  "Review.Scores.Rating",
+           review_score_accuracy = "Review.Scores.Accuracy",
+           review_score_cleanliness = "Review.Scores.Cleanliness",
+           review_score_checkin = "Review.Scores.Checkin",
+           review_score_location = "Review.Scores.Location",
+           cancellation_policy = "Cancellation.Policy",
+           city = "City",
+           state = "State",
+           zipcode = "Zipcode",
+           latitude = "Latitude",
+           longitude = "Longitude",
+           accommodates = "Accommodates",
+           price = "Price",
+           country_code = "Country.Code"
+           ) %>%
+                filter(country_code == 'US') %>%
+                  filter(!(property_type == 'Casa particular' |
+                         property_type == 'Train' |
+                         property_type == 'Plane' |
+                         property_type == 'Parking Space' |
+                         property_type == 'Van' |
+                        property_type == '2017-04-02' |
+                       property_type == 'Car'|
+                         property_type == 'Boat'))
+                
+  if (!file.exists('data/output')) {
+    dir.create('data/output')
+  }
+  saveRDS(file_reduced, 'data/output/airbnb-listings.rds')
+} else {
+  file_reduced <- readRDS('data/output/airbnb-listings.rds')
+}
+
+```
+
+
+
+## Import File and show column names
+```{r}
+file_clean_na <- "data/clean_na.csv"
+file_cna <- read.csv(file_clean_na, header = TRUE)
+
+total_row1 <- nrow(file_cna)
+total_col1 <- ncol(file_cna)
+colnames(file_cna)
+```
+
+There are about `r total_row1` rows and `r total_col1` columns. 
+## Columns and its data type
+```{r}
+glimpse(file_cna)
+```
+
+## City
+```{r}
+city_summary <- file_cna %>%
+                  group_by(city) %>%
+                  count()
+nrow(city_summary)
+```
+
+There are about `r nrow(city_summary)` unique registered cities from the listings. 
+
+```{r}
+uniq_city <- unique(file_cna$city)
+head(uniq_city, 10)
+```
+```{r}
+tail(uniq_city,10)
+```
+
+## State
+```{r}
+state_summary <- file_cna %>%
+                  group_by(state) %>%
+                  count()
+nrow(state_summary)
+```
+
+
+```{r}
+head(state_summary)
+```
+
+
+```{r}
+tail(state_summary)
+```
+## Cancelation Policy
+```{r}
+cancel_summary <- file_cna %>%
+                  group_by(cancellation.policy) %>%
+                  summarise(cancel_pol = n()) %>%
+                  arrange(desc = cancel_pol) %>%
+                  head()
+
+```
+
+```{r}
+#barplot(cancel_summary$cancel_pol,
+        #xlab = 'Cancelation Policy',
+        #ylab = 'Total')
+
+#axis(side = 1, at = seq_along(cancel_summary$cancel_pol)  - 0.5, tick = FALSE, labels = cancel_summary$cancellation.policy)
+ggplot(cancel_summary, aes(x = cancel_summary$cancellation.policy, y = cancel_summary$cancel_pol)) + geom_col()
+
+```
+
+## Unique Property
+```{r}
+uniq_type <- file_cna %>%
+                  group_by(property.type) %>%
+                  summarise(proper_type = n()) %>%
+                  arrange(desc(proper_type)) %>%
+                  head(10)
+
+ggplot(uniq_type, aes(x = uniq_type$property.type, y = uniq_type$proper_type)) + 
+  geom_col() + theme(axis.text.x = element_text(angle = 90)) +geom_text(aes(label=proper_type), position=position_dodge(width=0.9), vjust=-0.25)
+```
+
+
+## Price
+```{r}
+# Count the number of rows in price column that has NA
+sum(is.na(file_cna$price))
+
+```
+
+```{r}
+#Create a new data frame that exclude Price == NA
+file_cna2 <- file_cna[!is.na(file_cna$price),]
+row_substracted <- nrow(file_cna) - nrow(file_cna2)
+row_substracted
+```
+```{r convertToDate}
+file_cna2$host.since <- as.Date(file_cna2$host.since, format = '%Y-%m-%d')
+file_cna2$first.review <- as.Date(file_cna2$first.review, format = '%Y-%m-%d')
+file_cna2$last.review <- as.Date(file_cna2$last.review, format = '%Y-%m-%d')
+file_cna2$calendar.last.scraped <- as.Date(file_cna2$calendar.last.scraped, format = '%Y-%m-%d')
+```
+
+
+
+```{r}
+#remove 5-experience offered
+#remove 14-host verification
+#remove 16-neighborhoos.cleansed
+#remove 17-Neighborhood.group cleansed
+#remove 22-smart location
+#remove 24-country.country code already exist. 
+#remove 34
+#remove 40-cleaning fee
+#remove 66-geolocation(data already contain longitude and latitude)
+col_remove <- c(5, 14, 16, 17, 22, 24, 34, 40, 66)
+file_cna3 <- file_cna2[-col_remove]
+```
+
+```{r}
+#file price in different zipcode
+zip_price_avg_ca <- file_cna3 %>%
+                    filter(country.code == 'CA') %>%
+                    group_by(zipcode)%>%
+                    summarise(avg_price = mean(price)) %>%
+                    arrange(desc(avg_price))
+
+zip_price_avg_us <- file_cna3 %>%
+                    filter(country.code == 'US') %>%
+                    group_by(zipcode)%>%
+                    summarise(avg_price = mean(price)) %>%
+                    arrange(desc(avg_price))
+
+```
+
+
+```{r checkUniqueKey}
+unique_key <- file_cna3 %>%
+                distinct(host.id) %>%
+                nrow
+print(unique_key)
+
+unique_key2 <- file_cna3 %>%
+                distinct(x) %>%
+                nrow
+print(unique_key2)
+```
+
+```{r}
+price_v_ratings_us <- file_cna3 %>%
+                  filter(country.code == 'US' ) %>%
+                  group_by(price, review.scores.rating)
+
+ggplot(price_v_ratings_us, aes(x = price_v_ratings_us$price, y = price_v_ratings_us$review.scores.rating )) + geom_point()
+              
+```
+
+
+```{r connecting, eval=TRUE}
+con <- dbConnect(PostgreSQL(),
+                 host = 'localhost',
+                 port = 5432,
+                 user = "postgres",
+                 password = "ForBaitOnly!",
+                 dbname = "final")
+```
+
+
+```{r writeTable, eval=FALSE}
+dbWriteTable(con,
+              name = "airbnb",
+              file_cna3)
+```
+
+
+```{r listTables, eval=FALSE}
+dbListTables(con)
+```
+
+```{r readTable, eval=TRUE}
+table_data <- dbReadTable(conn = con, name = "Airbnb")
+  
+```

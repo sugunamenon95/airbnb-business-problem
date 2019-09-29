@@ -1,0 +1,40 @@
+"0","  file_reduced <- file_raw %>%
+    #filter(Country.Code == 'US')
+    select(host_id = 'Host.ID',
+           host_since = ""Host.Since"",
+           host_location = ""Host.Location"",
+           host_response_time = ""Host.Response.Time"",
+           host_listings_count = ""Host.Listings.Count"",
+           host_total_listings_count = ""Host.Total.Listings.Count"",
+           property_type = ""Property.Type"",
+           room_type = ""Room.Type"",
+           minimum_nights = ""Minimum.Nights"",
+           number_of_reviews = ""Number.of.Reviews"",
+           review_score_rating =  ""Review.Scores.Rating"",
+           review_score_accuracy = ""Review.Scores.Accuracy"",
+           review_score_cleanliness = ""Review.Scores.Cleanliness"",
+           review_score_checkin = ""Review.Scores.Checkin"",
+           review_score_location = ""Review.Scores.Location"",
+           cancellation_policy = ""Cancellation.Policy"",
+           city = ""City"",
+           state = ""State"",
+           zipcode = ""Zipcode"",
+           latitude = ""Latitude"",
+           longitude = ""Longitude"",
+           accommodates = ""Accommodates"",
+           price = ""Price"",
+           country_code = ""Country.Code""
+           ) %>%
+                filter(country_code == 'US') %>%
+                  filter(!(property_type == 'Casa particular' |
+                         property_type == 'Train' |
+                         property_type == 'Plane' |
+                         property_type == 'Parking Space' |
+                         property_type == 'Van' |
+                        property_type == '2017-04-02' |
+                       property_type == 'Car'|
+                         property_type == 'Boat'))
+"
+"2","Error in file_raw %>% select(host_id = ""Host.ID"", host_since = ""Host.Since"",  : 
+  could not find function ""%>%""
+"
