@@ -1,0 +1,61 @@
+---
+title: "Untitled"
+author: "Teguh Samudra"
+date: "9/14/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Libraries
+
+```{r loadLibraries}
+#Load PostgreSQL
+library(RPostgreSQL)
+```
+
+
+```{r}
+#load knitr
+library(knitr)
+```
+
+```{r}
+library(dplyr)
+```
+
+
+```{r}
+file_csv_raw <- "data/airbnb-listings.csv"
+filepath_csv <- read.csv(file_csv_raw, header = TRUE, sep = ';')
+
+row_total_dirty <- nrow(filepath_csv)
+col_total_dirty <- ncol(filepath_csv)
+colnames(filepath_csv) <- tolower(colnames(filepath_csv))
+```
+
+```{r}
+df <- filepath_csv[-c(2, 5, 6,7, 8, 10:15,  16:19, 21, 22, 25, 29:31, 36, 83, 89)]
+colnames(df)
+```
+```{r}
+exclude_type <- c('Casa particular', 'Train', 'Plane', ' ', 'Parking Space', 'Van', '2017-04-02', 'Car', 'Boat')
+
+df_type_excluded <- df[!(df$property.type == 'Casa particular' |
+                         df$property.type == 'Train' |
+                         df$property.type == 'Plane' |
+                         df$property.type == 'Parking Space' | 
+                         df$property.type == 'Van' |
+                        df$property.type == '2017-04-02' |
+                       df$property.type == 'Car'|
+                         df$property.type == 'Boat'
+                       )
+                       ,]
+```
+
+
+```{r}
+df_na <- df[(df$country.code == 'US' | df$country.code == 'CA'), ]
+```

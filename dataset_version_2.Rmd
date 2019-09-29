@@ -239,17 +239,17 @@ zip_price_avg_us <- file_cna3 %>%
 ```
 
 
-```{r checkUniqueKey}
+{r checkUniqueKey}
 unique_key <- file_cna3 %>%
                 distinct(host.id) %>%
                 nrow
 print(unique_key)
 
 unique_key2 <- file_cna3 %>%
-                distinct(x) %>%
+                distinct(host.id) %>%
                 nrow
 print(unique_key2)
-```
+
 
 ```{r}
 price_v_ratings_us <- file_cna3 %>%
@@ -261,28 +261,115 @@ ggplot(price_v_ratings_us, aes(x = price_v_ratings_us$price, y = price_v_ratings
 ```
 
 
-```{r connecting, eval=TRUE}
-con <- dbConnect(PostgreSQL(),
-                 host = 'localhost',
-                 port = 5432,
-                 user = "postgres",
-                 password = "ForBaitOnly!",
-                 dbname = "final")
+## Establishing connection with the database
+
+We create a PostgreSQL database for our data.  Both datasets include geographic data, at the provincial level.
+
+```{r dbConnect}
+
+# Build will fail if the file isn't there.
+assertthat::assert_that(file.exists('db_connect.txt'),
+  msg = "Your connection file is missing.")
+
+con_file <- readr::read_lines('db_connect.txt')
+
+con <- RPostgreSQL::dbConnect(
+             PostgreSQL(),
+             host = con_file[1],
+             port = con_file[2],
+             user = con_file[3],
+         password = con_file[4],
+           dbname = con_file[5])
+
+```
+
+```{r renaming column names}
+
+names(file_cna3)[5] <- "host_id"
+names(file_cna3)[6] <- "host_since"
+names(file_cna3)[7] <- "host_location"
+names(file_cna3)[8] <- "host_response_time"
+names(file_cna3)[11] <- "host_listings_count"
+names(file_cna3)[12] <- "host_total_listings_count"
+names(file_cna3)[21] <- "property_type"
+names(file_cna3)[22] <- "room_type"
+names(file_cna3)[35] <- "minimum_nights"
+names(file_cna3)[44] <- "number_of_reviews"
+names(file_cna3)[47] <- "review_score_rating"
+names(file_cna3)[48] <- "review_score_accuracy"
+names(file_cna3)[49] <- "review_score_cleanliness"
+names(file_cna3)[50] <- "review_score_checkin"
+names(file_cna3)[52] <- "review_score_location"
+names(file_cna3)[55] <- "cancellation_policy"
 ```
 
 
-```{r writeTable, eval=FALSE}
-dbWriteTable(con,
-              name = "airbnb",
-              file_cna3)
+## Creating datasets to be written to the database
+
+```{r create dataframes for tables to be created in the database}
+
+host_data <- file_cna3[c('host_id', 'host_since', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')]
+
+
+location <- file_cna3[c('zipcode', 'latitude', 'longitude', 'city', 'state')]
+
+property <- file_cna3[c('zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accomodates', 'price', 'number_of_reviews', 'cancellation_policy')]
+
+reviews <- file_cna3[c('review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
+
 ```
 
+
+## Creating function that will be called to write all the tables in the database
+
+```{r postDataFunction to insert tables in the database}
+post_data <- function(con, x, tablename = "") {
+  if (dbExistsTable(con, tablename)) {
+    dbExecute(con,
+      paste0("DROP TABLE ", tablename,
+             " CASCADE"))
+  }
+
+  dbWriteTable(con,
+               tablename,
+               x,
+               row.names = FALSE,
+               overwrite = TRUE)
+}
+```
+
+
+## Write tables to the database 
+
+```{r Write tables to database}
+
+post_data(con,
+            data.frame(review_id = 1:nrow(reviews),reviews),
+            "reviews")
+
+dbExecute(con,
+  "ALTER TABLE reviews ADD PRIMARY KEY (review_id)")
+
+post_data(con,
+            host_data,
+            "host")
+
+post_data(con,
+            location,
+            "location")
+
+post_data(con,
+            data.frame(property_id = 1:nrow(property),property),
+            "property")
+
+dbExecute(con,
+  "ALTER TABLE property ADD PRIMARY KEY (property_id)")
+
+
+```
+
+## List all tables present in the database
 
 ```{r listTables, eval=FALSE}
 dbListTables(con)
-```
-
-```{r readTable, eval=TRUE}
-table_data <- dbReadTable(conn = con, name = "Airbnb")
-  
 ```
