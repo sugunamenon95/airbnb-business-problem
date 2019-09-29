@@ -17,7 +17,90 @@ library(RPostgreSQL)
 library(knitr)
 library(dplyr)
 library(ggplot2)
+library(lubridate)
+library(readr)
+library(tidyr)
+
 ```
+
+
+```{r getAirbnbListing}
+
+if (!dir.exists("data/input/")) {
+  if (!dir.exists("data")) {
+    dir.create("data")
+  }
+  dir.create("data/input")
+}
+
+if (!file.exists("data/input/airbnb-listings.csv")) {
+  download.file("https://public.opendatasoft.com/explore/dataset/airbnb-listings/download/?format=csv&timezone=America/Los_Angeles&use_labels_for_header=true",
+  "data/input/airbnb-listings.csv")
+}
+
+```
+{r Count total rows and columns in dataset}
+file_csv_raw <- "data/input/airbnb-ratings.csv"
+filepath_csv <- read.csv(file_csv_raw, header = TRUE, sep = ';')
+
+row_total_dirty <- nrow(filepath_csv)
+col_total_dirty <- ncol(filepath_csv)
+colnames(filepath_csv) <- tolower(colnames(filepath_csv))
+
+
+
+```{r cleanData}
+
+if (!file.exists('data/output/airbnb-listings.rds')) {
+  file_raw <- read.csv("data/input/airbnb-listings.csv",header = TRUE, sep = ';')
+  file_reduced <- file_raw %>%
+    #filter(Country.Code == 'US')
+    select(host_id = 'Host.ID',
+           host_since = "Host.Since",
+           host_location = "Host.Location",
+           host_response_time = "Host.Response.Time",
+           host_listings_count = "Host.Listings.Count",
+           host_total_listings_count = "Host.Total.Listings.Count",
+           property_type = "Property.Type",
+           room_type = "Room.Type",
+           minimum_nights = "Minimum.Nights",
+           number_of_reviews = "Number.of.Reviews",
+           review_score_rating =  "Review.Scores.Rating",
+           review_score_accuracy = "Review.Scores.Accuracy",
+           review_score_cleanliness = "Review.Scores.Cleanliness",
+           review_score_checkin = "Review.Scores.Checkin",
+           review_score_location = "Review.Scores.Location",
+           cancellation_policy = "Cancellation.Policy",
+           city = "City",
+           state = "State",
+           zipcode = "Zipcode",
+           latitude = "Latitude",
+           longitude = "Longitude",
+           accommodates = "Accommodates",
+           price = "Price",
+           country_code = "Country.Code"
+           ) %>%
+                filter(country_code == 'US') %>%
+                  filter(!(property_type == 'Casa particular' |
+                         property_type == 'Train' |
+                         property_type == 'Plane' |
+                         property_type == 'Parking Space' |
+                         property_type == 'Van' |
+                        property_type == '2017-04-02' |
+                       property_type == 'Car'|
+                         property_type == 'Boat'))
+                
+  if (!file.exists('data/output')) {
+    dir.create('data/output')
+  }
+  saveRDS(file_reduced, 'data/output/airbnb-listings.rds')
+} else {
+  file_reduced <- readRDS('data/output/airbnb-listings.rds')
+}
+
+```
+
+
 
 ## Import File and show column names
 ```{r}
@@ -173,7 +256,7 @@ price_v_ratings_us <- file_cna3 %>%
                   filter(country.code == 'US' ) %>%
                   group_by(price, review.scores.rating)
 
-ggplot(price_v_ratings, aes(x = price_v_ratings$price, y = price_v_ratings$review.scores.rating )) + geom_point()
+ggplot(price_v_ratings_us, aes(x = price_v_ratings_us$price, y = price_v_ratings_us$review.scores.rating )) + geom_point()
               
 ```
 
@@ -200,6 +283,6 @@ dbListTables(con)
 ```
 
 ```{r readTable, eval=TRUE}
-table_data <- dbReadTable(conn = con, name = "airbnb")
+table_data <- dbReadTable(conn = con, name = "Airbnb")
   
 ```
