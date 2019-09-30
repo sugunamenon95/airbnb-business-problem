@@ -104,23 +104,23 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
 
 ## Import File and show column names
 ```{r}
-file_clean_na <- "data/clean_na.csv"
-file_cna <- read.csv(file_clean_na, header = TRUE)
+#file_clean_na <- "data/clean_na.csv"
+#file_cna <- read.csv(file_clean_na, header = TRUE)
 
-total_row1 <- nrow(file_cna)
-total_col1 <- ncol(file_cna)
-colnames(file_cna)
+total_row <- nrow(file_reduced)
+total_col <- ncol(file_reduced)
+colnames(file_reduced)
 ```
 
-There are about `r total_row1` rows and `r total_col1` columns. 
+There are about `r total_row` rows and `r total_col` columns. 
 ## Columns and its data type
 ```{r}
-glimpse(file_cna)
+glimpse(file_reduced)
 ```
 
 ## City
 ```{r}
-city_summary <- file_cna %>%
+city_summary <- file_reduced %>%
                   group_by(city) %>%
                   count()
 nrow(city_summary)
@@ -129,7 +129,7 @@ nrow(city_summary)
 There are about `r nrow(city_summary)` unique registered cities from the listings. 
 
 ```{r}
-uniq_city <- unique(file_cna$city)
+uniq_city <- unique(file_reduced$city)
 head(uniq_city, 10)
 ```
 ```{r}
@@ -138,7 +138,7 @@ tail(uniq_city,10)
 
 ## State
 ```{r}
-state_summary <- file_cna %>%
+state_summary <- file_reduced %>%
                   group_by(state) %>%
                   count()
 nrow(state_summary)
@@ -155,8 +155,8 @@ tail(state_summary)
 ```
 ## Cancelation Policy
 ```{r}
-cancel_summary <- file_cna %>%
-                  group_by(cancellation.policy) %>%
+cancel_summary <- file_reduced %>%
+                  group_by(cancellation_policy) %>%
                   summarise(cancel_pol = n()) %>%
                   arrange(desc = cancel_pol) %>%
                   head()
@@ -169,19 +169,19 @@ cancel_summary <- file_cna %>%
         #ylab = 'Total')
 
 #axis(side = 1, at = seq_along(cancel_summary$cancel_pol)  - 0.5, tick = FALSE, labels = cancel_summary$cancellation.policy)
-ggplot(cancel_summary, aes(x = cancel_summary$cancellation.policy, y = cancel_summary$cancel_pol)) + geom_col()
+ggplot(cancel_summary, aes(x = cancel_summary$cancellation_policy, y = cancel_summary$cancel_pol)) + geom_col()
 
 ```
 
 ## Unique Property
 ```{r}
-uniq_type <- file_cna %>%
-                  group_by(property.type) %>%
+uniq_type <- file_reduced %>%
+                  group_by(property_type) %>%
                   summarise(proper_type = n()) %>%
                   arrange(desc(proper_type)) %>%
                   head(10)
 
-ggplot(uniq_type, aes(x = uniq_type$property.type, y = uniq_type$proper_type)) + 
+ggplot(uniq_type, aes(x = uniq_type$property_type, y = uniq_type$proper_type)) + 
   geom_col() + theme(axis.text.x = element_text(angle = 90)) +geom_text(aes(label=proper_type), position=position_dodge(width=0.9), vjust=-0.25)
 ```
 
@@ -189,21 +189,21 @@ ggplot(uniq_type, aes(x = uniq_type$property.type, y = uniq_type$proper_type)) +
 ## Price
 ```{r}
 # Count the number of rows in price column that has NA
-sum(is.na(file_cna$price))
+sum(is.na(file_reduced$price))
 
 ```
 
 ```{r}
 #Create a new data frame that exclude Price == NA
-file_cna2 <- file_cna[!is.na(file_cna$price),]
-row_substracted <- nrow(file_cna) - nrow(file_cna2)
+file_cna2 <- file_reduced[!is.na(file_reduced$price),]
+row_substracted <- nrow(file_reduced) - nrow(file_cna2)
 row_substracted
 ```
 ```{r convertToDate}
-file_cna2$host.since <- as.Date(file_cna2$host.since, format = '%Y-%m-%d')
-file_cna2$first.review <- as.Date(file_cna2$first.review, format = '%Y-%m-%d')
-file_cna2$last.review <- as.Date(file_cna2$last.review, format = '%Y-%m-%d')
-file_cna2$calendar.last.scraped <- as.Date(file_cna2$calendar.last.scraped, format = '%Y-%m-%d')
+file_cna2$host_since <- as.Date(file_cna2$host_since, format = '%Y-%m-%d')
+#file_cna2$first_review <- as.Date(file_cna2$first.review, format = '%Y-%m-%d')
+#file_cna2$last.review <- as.Date(file_cna2$last.review, format = '%Y-%m-%d')
+#file_cna2$calendar.last.scraped <- as.Date(file_cna2$calendar.last.scraped, format = '%Y-%m-%d')
 ```
 
 
@@ -218,20 +218,21 @@ file_cna2$calendar.last.scraped <- as.Date(file_cna2$calendar.last.scraped, form
 #remove 34
 #remove 40-cleaning fee
 #remove 66-geolocation(data already contain longitude and latitude)
-col_remove <- c(5, 14, 16, 17, 22, 24, 34, 40, 66)
-file_cna3 <- file_cna2[-col_remove]
+
+#col_remove <- c(5, 14, 16, 17, 22, 24, 34, 40, 66)
+#file_cna3 <- file_cna2[-col_remove]
 ```
 
 ```{r}
 #file price in different zipcode
-zip_price_avg_ca <- file_cna3 %>%
-                    filter(country.code == 'CA') %>%
+zip_price_avg_ca <- file_cna2 %>%
+                    filter(country_code == 'CA') %>%
                     group_by(zipcode)%>%
                     summarise(avg_price = mean(price)) %>%
                     arrange(desc(avg_price))
 
-zip_price_avg_us <- file_cna3 %>%
-                    filter(country.code == 'US') %>%
+zip_price_avg_us <- file_cna2 %>%
+                    filter(country_code == 'US') %>%
                     group_by(zipcode)%>%
                     summarise(avg_price = mean(price)) %>%
                     arrange(desc(avg_price))
@@ -252,11 +253,11 @@ print(unique_key2)
 
 
 ```{r}
-price_v_ratings_us <- file_cna3 %>%
-                  filter(country.code == 'US' ) %>%
-                  group_by(price, review.scores.rating)
+price_v_ratings_us <- file_cna2 %>%
+                  filter(country_code == 'US' ) %>%
+                  group_by(price, review_score_rating)
 
-ggplot(price_v_ratings_us, aes(x = price_v_ratings_us$price, y = price_v_ratings_us$review.scores.rating )) + geom_point()
+ggplot(price_v_ratings_us, aes(x = price_v_ratings_us$price, y = price_v_ratings_us$review_score_rating )) + geom_point()
               
 ```
 
@@ -283,7 +284,9 @@ con <- RPostgreSQL::dbConnect(
 
 ```
 
-```{r renaming column names}
+## This code can be removed later
+
+{r renaming column names}
 
 names(file_cna3)[5] <- "host_id"
 names(file_cna3)[6] <- "host_since"
@@ -301,21 +304,22 @@ names(file_cna3)[49] <- "review_score_cleanliness"
 names(file_cna3)[50] <- "review_score_checkin"
 names(file_cna3)[52] <- "review_score_location"
 names(file_cna3)[55] <- "cancellation_policy"
-```
+
 
 
 ## Creating datasets to be written to the database
 
 ```{r create dataframes for tables to be created in the database}
 
-host_data <- file_cna3[c('host_id', 'host_since', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')]
+
+host_data <- file_cna2[c('host_id', 'host_since', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')]
 
 
-location <- file_cna3[c('zipcode', 'latitude', 'longitude', 'city', 'state')]
+location <- file_cna2[c('zipcode', 'latitude', 'longitude', 'city', 'state')]
 
-property <- file_cna3[c('zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accomodates', 'price', 'number_of_reviews', 'cancellation_policy')]
+property <- file_cna2[c('zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accommodates', 'price', 'number_of_reviews', 'cancellation_policy')]
 
-reviews <- file_cna3[c('review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
+reviews <- file_cna2[c('review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
 
 ```
 
