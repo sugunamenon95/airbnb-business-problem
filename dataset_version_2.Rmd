@@ -39,14 +39,14 @@ if (!file.exists("data/input/airbnb-listings.csv")) {
 }
 
 ```
-{r Count total rows and columns in dataset}
-file_csv_raw <- "data/input/airbnb-ratings.csv"
-filepath_csv <- read.csv(file_csv_raw, header = TRUE, sep = ';')
 
-row_total_dirty <- nrow(filepath_csv)
-col_total_dirty <- ncol(filepath_csv)
-colnames(filepath_csv) <- tolower(colnames(filepath_csv))
 
+```{r getUsPopulation}
+if (!file.exists("data/input/pop-by-zip-code.csv")) {
+  download.file("https://query.data.world/s/alfepb4cfqwqaiegamf25yfoprleq2",
+  "data/input/pop-by-zip-code.csv")
+}
+```
 
 
 ```{r cleanData}
@@ -100,6 +100,22 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
 
 ```
 
+```{r readPopulation}
+if (!file.exists('data/output/population.rds')) {
+  population_raw <- readr::read_csv("data/input/pop-by-zip-code.csv")
+
+  population <- population_raw %>%
+    select(zip_code_pop = 'zip_code',
+           pop = 'y-2016')
+
+  if (!file.exists('data/output')) {
+    dir.create('data/output')
+  }
+  saveRDS(population, 'data/output/population.rds')
+} else {
+  population <- readRDS('data/output/population.rds')
+}
+```
 
 
 ## Import File and show column names
