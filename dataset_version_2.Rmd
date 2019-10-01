@@ -88,7 +88,8 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
                          property_type == 'Van' |
                         property_type == '2017-04-02' |
                        property_type == 'Car'|
-                         property_type == 'Boat'))
+                         property_type == 'Boat')) %>%
+              state = tolower(state)
                 
   if (!file.exists('data/output')) {
     dir.create('data/output')
@@ -322,20 +323,27 @@ names(file_cna3)[52] <- "review_score_location"
 names(file_cna3)[55] <- "cancellation_policy"
 
 
+## Adding column property_id in the dataset
+
+```{r add property_id}
+
+file_cna2$property_id <- seq.int(nrow(file_cna2))
+
+```
+
 
 ## Creating datasets to be written to the database
 
 ```{r create dataframes for tables to be created in the database}
-
 
 host_data <- file_cna2[c('host_id', 'host_since', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')]
 
 
 location <- file_cna2[c('zipcode', 'latitude', 'longitude', 'city', 'state')]
 
-property <- file_cna2[c('zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accommodates', 'price', 'number_of_reviews', 'cancellation_policy')]
+property <- file_cna2[c('property_id', 'zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accommodates', 'price', 'number_of_reviews', 'cancellation_policy')]
 
-reviews <- file_cna2[c('review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
+reviews <- file_cna2[c('property_id', 'review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
 
 ```
 
@@ -379,11 +387,15 @@ post_data(con,
             "location")
 
 post_data(con,
-            data.frame(property_id = 1:nrow(property),property),
+            property,
             "property")
 
 dbExecute(con,
   "ALTER TABLE property ADD PRIMARY KEY (property_id)")
+
+post_data(con,
+            data.frame(population),
+            "population")
 
 
 ```
