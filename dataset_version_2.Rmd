@@ -88,7 +88,9 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
                          property_type == 'Van' |
                         property_type == '2017-04-02' |
                        property_type == 'Car'|
-                         property_type == 'Boat'))
+                         property_type == 'Boat')) %>%
+    mutate_each(state, funs = toupper)
+
                 
   if (!file.exists('data/output')) {
     dir.create('data/output')
@@ -322,20 +324,27 @@ names(file_cna3)[52] <- "review_score_location"
 names(file_cna3)[55] <- "cancellation_policy"
 
 
+## Adding column property_id in the dataset
+
+```{r add property_id}
+
+file_cna2$property_id <- seq.int(nrow(file_cna2))
+
+```
+
 
 ## Creating datasets to be written to the database
 
 ```{r create dataframes for tables to be created in the database}
-
 
 host_data <- file_cna2[c('host_id', 'host_since', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')]
 
 
 location <- file_cna2[c('zipcode', 'latitude', 'longitude', 'city', 'state')]
 
-property <- file_cna2[c('zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accommodates', 'price', 'number_of_reviews', 'cancellation_policy')]
+property <- file_cna2[c('property_id', 'zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accommodates', 'price', 'number_of_reviews', 'cancellation_policy')]
 
-reviews <- file_cna2[c('review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
+reviews <- file_cna2[c('property_id', 'review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
 
 ```
 
@@ -379,11 +388,15 @@ post_data(con,
             "location")
 
 post_data(con,
-            data.frame(property_id = 1:nrow(property),property),
+            property,
             "property")
 
 dbExecute(con,
   "ALTER TABLE property ADD PRIMARY KEY (property_id)")
+
+post_data(con,
+            data.frame(population),
+            "population")
 
 
 ```
@@ -392,4 +405,45 @@ dbExecute(con,
 
 ```{r listTables, eval=FALSE}
 dbListTables(con)
+```
+
+
+## Get data from database
+
+```{r GetData}
+
+dataset1 = dbGetQuery(con, "
+  SELECT L.city,
+	  SUM(PR.number_of_reviews) AS no_of_bookings,
+	  ROUND(CAST(AVG(POP.pop) AS NUMERIC), 2) AS pop_density,
+	  ROUND(CAST(AVG(PR.price) AS NUMERIC), 2) AS price
+  FROM property PR
+	  INNER JOIN location L ON L.zipcode = PR.zipcode
+	  INNER JOIN population POP ON L.zipcode = POP.zip_code_pop
+  WHERE L.state <> ''
+  GROUP BY L.city
+")
+
+dataset1
+```
+
+
+```{r GetData}
+
+dataset2 = dbGetQuery(con, "
+  SELECT PR.property_id,
+	  PR.price,
+	  PR.room_type,
+	  PR.minimum_nights,
+	  PR.number_of_reviews AS no_of_bookings,
+	  R.review_score_rating,
+	  R.review_score_cleanliness,
+	  R.review_score_accuracy,
+	  R.review_score_checkin,
+	  R.review_score_location
+  FROM property PR 
+	INNER JOIN reviews R ON R.property_id = PR.property_id 
+")
+
+dataset2
 ```
