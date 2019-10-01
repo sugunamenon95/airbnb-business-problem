@@ -1,6 +1,6 @@
 ---
-title: "airbnb_north_america"
-author: "Teguh Samudra"
+title: "Airbnb business insights"
+author: "Teguh Samudra, Zhuoya Wang, Henry Deng, Suguna Menon"
 date: "9/15/2019"
 output: html_document
 ---
@@ -21,7 +21,6 @@ library(lubridate)
 library(readr)
 library(tidyr)
 library(stringi)
-```
 ```
 
 
@@ -139,7 +138,7 @@ if (!file.exists('data/output/population.rds')) {
 }
 ```
 
-```{r}
+```{r readLocation}
 if (!file.exists('data/output/match_zip_city.rds')) {
   match_zip_city <- readr::read_csv("data/input/uszips.csv")
 
@@ -167,6 +166,7 @@ review_vs_rating <- file_reduced %>%
 
 ggplot(review_vs_rating, aes(x = review_score_rating, y = number_of_reviews)) + geom_point() +labs(y= 'Number of Bookings')
 ```
+
 ```{r}
 price_vs_numberReviews <- file_reduced %>%
                     filter(!is.na(price) & !is.na(number_of_reviews))
@@ -204,6 +204,7 @@ There are about `r nrow(city_summary)` unique registered cities from the listing
 uniq_city <- unique(file_reduced$city)
 head(uniq_city, 10)
 ```
+
 ```{r}
 tail(uniq_city,10)
 ```
@@ -356,27 +357,6 @@ con <- RPostgreSQL::dbConnect(
 
 ```
 
-## This code can be removed later
-
-{r renaming column names}
-
-names(file_cna3)[5] <- "host_id"
-names(file_cna3)[6] <- "host_since"
-names(file_cna3)[7] <- "host_location"
-names(file_cna3)[8] <- "host_response_time"
-names(file_cna3)[11] <- "host_listings_count"
-names(file_cna3)[12] <- "host_total_listings_count"
-names(file_cna3)[21] <- "property_type"
-names(file_cna3)[22] <- "room_type"
-names(file_cna3)[35] <- "minimum_nights"
-names(file_cna3)[44] <- "number_of_reviews"
-names(file_cna3)[47] <- "review_score_rating"
-names(file_cna3)[48] <- "review_score_accuracy"
-names(file_cna3)[49] <- "review_score_cleanliness"
-names(file_cna3)[50] <- "review_score_checkin"
-names(file_cna3)[52] <- "review_score_location"
-names(file_cna3)[55] <- "cancellation_policy"
-
 
 ## Adding column property_id in the dataset
 
@@ -391,10 +371,9 @@ file_cna2$property_id <- seq.int(nrow(file_cna2))
 
 ```{r create dataframes for tables to be created in the database}
 
-host_data <- file_cna2[c('host_id', 'host_since', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')]
+host_data <- unique(file_cna2[c('host_id', 'host_since')])
 
-
-location <- file_cna2[c('zipcode', 'latitude', 'longitude', 'city', 'state')]
+host_desc <- unique(file_cna2[c('host_id', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')])
 
 property <- file_cna2[c('property_id', 'zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accommodates', 'price', 'number_of_reviews', 'cancellation_policy')]
 
@@ -432,14 +411,26 @@ post_data(con,
 
 dbExecute(con,
   "ALTER TABLE reviews ADD PRIMARY KEY (review_id)")
+dbExecute(con,
+  "CREATE UNIQUE INDEX review_idx ON reviews (review_id)")
+
 
 post_data(con,
             host_data,
             "host")
+dbExecute(con,
+  "CREATE UNIQUE INDEX host_idx ON host (host_id)")
 
 post_data(con,
-            location,
+            host_desc,
+            "host_details")
+
+post_data(con,
+            us_zip,
             "location")
+
+dbExecute(con,
+  "CREATE UNIQUE INDEX zip_x ON location (zip)")
 
 post_data(con,
             property,
@@ -448,9 +439,14 @@ post_data(con,
 dbExecute(con,
   "ALTER TABLE property ADD PRIMARY KEY (property_id)")
 
+dbExecute(con,
+  "CREATE UNIQUE INDEX property_idx ON property (property_id)")
+
 post_data(con,
             data.frame(population),
             "population")
+dbExecute(con,
+  "CREATE UNIQUE INDEX zip_code_popx ON population (zip_code_pop)")
 
 
 ```
@@ -468,13 +464,12 @@ dbListTables(con)
 
 dataset1 = dbGetQuery(con, "
   SELECT L.city,
-	  SUM(PR.number_of_reviews) AS no_of_bookings,
-	  ROUND(CAST(AVG(POP.pop) AS NUMERIC), 2) AS pop_density,
-	  ROUND(CAST(AVG(PR.price) AS NUMERIC), 2) AS price
+  	SUM(PR.number_of_reviews) AS no_of_bookings,
+  	ROUND(CAST(AVG(POP.pop) AS NUMERIC), 2) AS pop_density,
+  	ROUND(CAST(AVG(PR.price) AS NUMERIC), 2) AS price
   FROM property PR
-	  INNER JOIN location L ON L.zipcode = PR.zipcode
-	  INNER JOIN population POP ON L.zipcode = POP.zip_code_pop
-  WHERE L.state <> ''
+  	INNER JOIN location L ON L.zip = PR.zipcode
+  	INNER JOIN population POP ON L.zip = POP.zip_code_pop
   GROUP BY L.city
 ")
 
@@ -485,11 +480,14 @@ dataset1
 ```{r GetData}
 
 dataset2 = dbGetQuery(con, "
-  SELECT PR.property_id,
+  SELECT H.host_id,
+    HD.host_total_listings_count,
+    PR.property_id,
 	  PR.price,
 	  PR.room_type,
 	  PR.minimum_nights,
 	  PR.number_of_reviews AS no_of_bookings,
+	  PR.cancellation_policy,
 	  R.review_score_rating,
 	  R.review_score_cleanliness,
 	  R.review_score_accuracy,
@@ -497,6 +495,8 @@ dataset2 = dbGetQuery(con, "
 	  R.review_score_location
   FROM property PR
 	INNER JOIN reviews R ON R.property_id = PR.property_id
+	INNER JOIN host H ON H.host_id = PR.host_id
+	INNER JOIN host_details HD ON H.host_id = HD.host_id
 ")
 
 dataset2
