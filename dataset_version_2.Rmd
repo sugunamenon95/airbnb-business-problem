@@ -20,6 +20,7 @@ library(ggplot2)
 library(lubridate)
 library(readr)
 library(tidyr)
+library(stringi)
 
 ```
 
@@ -36,6 +37,25 @@ if (!dir.exists("data/input/")) {
 if (!file.exists("data/input/airbnb-listings.csv")) {
   download.file("https://public.opendatasoft.com/explore/dataset/airbnb-listings/download/?format=csv&timezone=America/Los_Angeles&use_labels_for_header=true",
   "data/input/airbnb-listings.csv")
+}
+
+```
+
+
+
+```{r getCities}
+
+if (!dir.exists("data/input/")) {
+  if (!dir.exists("data")) {
+    dir.create("data")
+  }
+  dir.create("data/input")
+}
+
+if (!file.exists("data/input/simplemaps_uszips_basicv1.6.zip")) {
+  download.file("https://simplemaps.com/static/data/us-zips/1.6/basic/simplemaps_uszips_basicv1.6.zip",
+  "data/input/simplemaps_uszips_basicv1.6.zip")
+  unzip("data/input/simplemaps_uszips_basicv1.6.zip", exdir = "data/input")
 }
 
 ```
@@ -87,8 +107,9 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
                          property_type == 'Parking Space' |
                          property_type == 'Van' |
                         property_type == '2017-04-02' |
-                       property_type == 'Car'|
-                         property_type == 'Boat'))
+                        property_type == 'Car'|
+                         property_type == 'Boat')) %>%
+                filter(stri_length(zipcode) == 5)
                 
   if (!file.exists('data/output')) {
     dir.create('data/output')
@@ -117,6 +138,40 @@ if (!file.exists('data/output/population.rds')) {
 }
 ```
 
+```{r}
+if (!file.exists('data/output/match_zip_city.rds')) {
+  match_zip_city <- readr::read_csv("data/input/uszips.csv")
+
+  us_zip <- match_zip_city %>%
+    select(zip = 'zip',
+           city = 'city',
+           state_id = 'state_id',
+           state_name = 'state_name',
+           county_name = 'county_name'
+           )
+
+  if (!file.exists('data/output')) {
+    dir.create('data/output')
+  }
+  saveRDS(us_zip, 'data/output/match_zip_city.rds')
+} else {
+  us_zip <- readRDS('data/output/match_zip_city.rds')
+}
+
+```
+
+```{r}
+review_vs_rating <- file_reduced %>%
+                    filter(!is.na(review_score_rating) & !is.na(number_of_reviews))
+
+ggplot(review_vs_rating, aes(x = review_score_rating, y = number_of_reviews)) + geom_point() +labs(y= 'Number of Bookings')
+```
+```{r}
+price_vs_numberReviews <- file_reduced %>%
+                    filter(!is.na(price) & !is.na(number_of_reviews))
+
+ggplot(price_vs_numberReviews, aes(x = price, y = number_of_reviews)) + geom_point() +labs(y='Number of Bookings')
+```
 
 ## Import File and show column names
 ```{r}
