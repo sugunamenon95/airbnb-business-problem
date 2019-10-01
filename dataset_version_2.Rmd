@@ -20,7 +20,8 @@ library(ggplot2)
 library(lubridate)
 library(readr)
 library(tidyr)
-
+library(stringi)
+```
 ```
 
 
@@ -36,6 +37,25 @@ if (!dir.exists("data/input/")) {
 if (!file.exists("data/input/airbnb-listings.csv")) {
   download.file("https://public.opendatasoft.com/explore/dataset/airbnb-listings/download/?format=csv&timezone=America/Los_Angeles&use_labels_for_header=true",
   "data/input/airbnb-listings.csv")
+}
+
+```
+
+
+
+```{r getCities}
+
+if (!dir.exists("data/input/")) {
+  if (!dir.exists("data")) {
+    dir.create("data")
+  }
+  dir.create("data/input")
+}
+
+if (!file.exists("data/input/simplemaps_uszips_basicv1.6.zip")) {
+  download.file("https://simplemaps.com/static/data/us-zips/1.6/basic/simplemaps_uszips_basicv1.6.zip",
+  "data/input/simplemaps_uszips_basicv1.6.zip")
+  unzip("data/input/simplemaps_uszips_basicv1.6.zip", exdir = "data/input")
 }
 
 ```
@@ -87,11 +107,11 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
                          property_type == 'Parking Space' |
                          property_type == 'Van' |
                         property_type == '2017-04-02' |
-                       property_type == 'Car'|
+                        property_type == 'Car'|
                          property_type == 'Boat')) %>%
-    mutate_each(state, funs = toupper)
+                filter(stri_length(zipcode) == 5) %>%
+                    mutate_each(state, funs = toupper)
 
-                
   if (!file.exists('data/output')) {
     dir.create('data/output')
   }
@@ -119,6 +139,40 @@ if (!file.exists('data/output/population.rds')) {
 }
 ```
 
+```{r}
+if (!file.exists('data/output/match_zip_city.rds')) {
+  match_zip_city <- readr::read_csv("data/input/uszips.csv")
+
+  us_zip <- match_zip_city %>%
+    select(zip = 'zip',
+           city = 'city',
+           state_id = 'state_id',
+           state_name = 'state_name',
+           county_name = 'county_name'
+           )
+
+  if (!file.exists('data/output')) {
+    dir.create('data/output')
+  }
+  saveRDS(us_zip, 'data/output/match_zip_city.rds')
+} else {
+  us_zip <- readRDS('data/output/match_zip_city.rds')
+}
+
+```
+
+```{r}
+review_vs_rating <- file_reduced %>%
+                    filter(!is.na(review_score_rating) & !is.na(number_of_reviews))
+
+ggplot(review_vs_rating, aes(x = review_score_rating, y = number_of_reviews)) + geom_point() +labs(y= 'Number of Bookings')
+```
+```{r}
+price_vs_numberReviews <- file_reduced %>%
+                    filter(!is.na(price) & !is.na(number_of_reviews))
+
+ggplot(price_vs_numberReviews, aes(x = price, y = number_of_reviews)) + geom_point() +labs(y='Number of Bookings')
+```
 
 ## Import File and show column names
 ```{r}
@@ -130,7 +184,7 @@ total_col <- ncol(file_reduced)
 colnames(file_reduced)
 ```
 
-There are about `r total_row` rows and `r total_col` columns. 
+There are about `r total_row` rows and `r total_col` columns.
 ## Columns and its data type
 ```{r}
 glimpse(file_reduced)
@@ -144,7 +198,7 @@ city_summary <- file_reduced %>%
 nrow(city_summary)
 ```
 
-There are about `r nrow(city_summary)` unique registered cities from the listings. 
+There are about `r nrow(city_summary)` unique registered cities from the listings.
 
 ```{r}
 uniq_city <- unique(file_reduced$city)
@@ -199,7 +253,7 @@ uniq_type <- file_reduced %>%
                   arrange(desc(proper_type)) %>%
                   head(10)
 
-ggplot(uniq_type, aes(x = uniq_type$property_type, y = uniq_type$proper_type)) + 
+ggplot(uniq_type, aes(x = uniq_type$property_type, y = uniq_type$proper_type)) +
   geom_col() + theme(axis.text.x = element_text(angle = 90)) +geom_text(aes(label=proper_type), position=position_dodge(width=0.9), vjust=-0.25)
 ```
 
@@ -232,7 +286,7 @@ file_cna2$host_since <- as.Date(file_cna2$host_since, format = '%Y-%m-%d')
 #remove 16-neighborhoos.cleansed
 #remove 17-Neighborhood.group cleansed
 #remove 22-smart location
-#remove 24-country.country code already exist. 
+#remove 24-country.country code already exist.
 #remove 34
 #remove 40-cleaning fee
 #remove 66-geolocation(data already contain longitude and latitude)
@@ -276,7 +330,7 @@ price_v_ratings_us <- file_cna2 %>%
                   group_by(price, review_score_rating)
 
 ggplot(price_v_ratings_us, aes(x = price_v_ratings_us$price, y = price_v_ratings_us$review_score_rating )) + geom_point()
-              
+
 ```
 
 
@@ -368,7 +422,7 @@ post_data <- function(con, x, tablename = "") {
 ```
 
 
-## Write tables to the database 
+## Write tables to the database
 
 ```{r Write tables to database}
 
@@ -441,8 +495,8 @@ dataset2 = dbGetQuery(con, "
 	  R.review_score_accuracy,
 	  R.review_score_checkin,
 	  R.review_score_location
-  FROM property PR 
-	INNER JOIN reviews R ON R.property_id = PR.property_id 
+  FROM property PR
+	INNER JOIN reviews R ON R.property_id = PR.property_id
 ")
 
 dataset2
