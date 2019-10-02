@@ -118,8 +118,9 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
 } else {
   file_reduced <- readRDS('data/output/airbnb-listings.rds')
 }
-
 ```
+
+
 
 ```{r readPopulation}
 if (!file.exists('data/output/population.rds')) {
@@ -160,19 +161,7 @@ if (!file.exists('data/output/match_zip_city.rds')) {
 
 ```
 
-```{r}
-review_vs_rating <- file_reduced %>%
-                    filter(!is.na(review_score_rating) & !is.na(number_of_reviews))
 
-ggplot(review_vs_rating, aes(x = review_score_rating, y = number_of_reviews)) + geom_point() +labs(y= 'Number of Bookings')
-```
-
-```{r}
-price_vs_numberReviews <- file_reduced %>%
-                    filter(!is.na(price) & !is.na(number_of_reviews))
-
-ggplot(price_vs_numberReviews, aes(x = price, y = number_of_reviews)) + geom_point() +labs(y='Number of Bookings')
-```
 
 ## Import File and show column names
 ```{r}
@@ -323,16 +312,6 @@ unique_key2 <- file_cna3 %>%
                 distinct(host.id) %>%
                 nrow
 print(unique_key2)
-
-
-```{r}
-price_v_ratings_us <- file_cna2 %>%
-                  filter(country_code == 'US' ) %>%
-                  group_by(price, review_score_rating)
-
-ggplot(price_v_ratings_us, aes(x = price_v_ratings_us$price, y = price_v_ratings_us$review_score_rating )) + geom_point()
-
-```
 
 
 ## Establishing connection with the database
@@ -500,4 +479,43 @@ dataset2 = dbGetQuery(con, "
 ")
 
 dataset2
+```
+
+```{r}
+review_vs_rating <- dataset2 %>%
+                    filter(!is.na(review_score_rating) & !is.na(no_of_bookings))
+
+ggplot(review_vs_rating, aes(x = review_score_rating, y = no_of_bookings)) + geom_point() +labs(x= 'Rating', y= 'Number of Bookings') + ggtitle("The Affect of Rating Score to Number of Bookings Received")
+```
+
+
+```{r}
+price_vs_numberReviews <- dataset2 %>%
+                    filter(!is.na(price) & !is.na(no_of_bookings))
+
+ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'bin', binwidth = 30, col = 'red', fill = 'blue') +labs(x = 'Price (USD)',y='Number of Bookings') + ggtitle("Popular Price Range for AirBnb Listings")
+```
+
+```{r}
+minimum_nights_booking <- dataset2 %>%
+                    filter(!is.na(minimum_nights) & !is.na(no_of_bookings)) %>%
+                    filter(minimum_nights <= 30)
+
+ggplot(minimum_nights_booking, aes(x = minimum_nights, y = no_of_bookings, color=room_type)) + geom_point() +labs(x = 'Minimum Night (Day)', y='Number of Bookings') + ggtitle("Length of Stay of Airbnb Users")
+```
+
+```{r}
+#ggplot(dataset1, aes(x = pop_density, y = no_of_bookings)) + geom_tile(aes(fill=price), color = 'white')  + scale_fill_gradient(low = "white", high = "steelblue")
+
+ggplot(dataset1, aes(x = pop_density, y = no_of_bookings)) + geom_point()
+
+```
+
+
+```{r}
+dataset1_sorted <- dataset1 %>%
+  arrange(desc(no_of_bookings)) %>%
+  head(20)
+
+ggplot(dataset1_sorted, aes(x = pop_density, y = no_of_bookings, color = price)) +geom_point(size = 5) + labs(x= 'Population Density', y= 'Number of Bookings') + ggtitle("Number of Bookings vs. Population Density in the Top 20 Cities")
 ```
