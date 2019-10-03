@@ -1,18 +1,36 @@
 ---
-title: "Airbnb business insights"
-author: "Teguh Samudra, Zhuoya Wang, Henry Deng, Suguna Menon"
-date: "9/15/2019"
-output: html_document
+title: Airbnb business insights
+author:
+  - affiliation: UBC Sauder School of Business
+    name: Teguh Samudra, Zhuoya Wang, Henry Deng, Suguna Menon
+date: "October 2, 2019"
+output:
+  html_document:
+    code_folding: show
+    fig_caption: yes
+    keep_md: yes
+    self_contained: yes
+    theme: readable
+    toc: yes
+    toc_float: yes
+dev: svg
+highlight: tango
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+## Problem Statement
 
-## Load Libraries
+What are the key factors that affect the demand for Airbnb among cities in the US?
 
-```{r loadLibraries}
-#Load PostgreSQL, knitr, dplyr
+We are interested in the business domain of home-sharing services. We decide to work on analyzing some key factors resulting in the different demand among US cities. By knowing analyzing these questions, we believe it will help improve Airbnb’s performance in the cities with low demand.
+
+## Data
+
+```{r loadLibs}
+knitr::opts_chunk$set(echo = TRUE,
+                      results = 'hide',
+                      message = FALSE,
+                      warnings = FALSE)
+
 library(RPostgreSQL)
 library(knitr)
 library(dplyr)
@@ -22,6 +40,19 @@ library(readr)
 library(tidyr)
 library(stringi)
 ```
+
+### Airbnb listings in US
+
+The data comes from OpenDataSoft  (https://public.opendatasoft.com/explore/dataset/airbnb-listings/table/?disjunctive.host_verifications&disjunctive.amenities&disjunctive.features) and represents estimates of interprovincial migration from 1971 -- 2019.  Values in the table indicate the year and annual quarter of observation, the source province (in rows) and then the number of individuals migrating to each of the provinces and territories in Canada across the columns.
+
+| Column       | Meaning                          |
+|--------------|----------------------------------|
+| id           | Unique identifier                |
+| year         | Year of survey                   |
+| quarter      | Annual quarter of survey (1 - 4) |
+| origin       | Province of origin               |
+| [NL -- Nvt.] | Province or territory (13 cols)  |
+| Total        | Total migration                  |
 
 
 ```{r getAirbnbListing}
@@ -40,9 +71,23 @@ if (!file.exists("data/input/airbnb-listings.csv")) {
 
 ```
 
+### Zipcode and location data for United States
+
+Statistics Canada reports [monthly estimates of employment across Canadian provinces](https://www150.statcan.gc.ca/n1/en/tbl/csv/14100017-eng.zip?st=o0s47X7R).
+
+Data is broken down by year and month, location, gender and age class.
+
+| Column       | Meaning                          |
+|--------------|----------------------------------|
+| id           | Unique identifier                |
+| year         | Year of survey                   |
+| quarter      | Annual quarter of survey (1 - 4) |
+| origin       | Province of origin               |
+| [NL -- Nvt.] | Province or territory (13 cols)  |
+| Total        | Total migration                  |
 
 
-```{r getCities}
+```{r getUSZipcodes}
 
 if (!dir.exists("data/input/")) {
   if (!dir.exists("data")) {
@@ -59,13 +104,70 @@ if (!file.exists("data/input/simplemaps_uszips_basicv1.6.zip")) {
 
 ```
 
+### United States population
+
+Statistics Canada reports [monthly estimates of employment across Canadian provinces](https://www150.statcan.gc.ca/n1/en/tbl/csv/14100017-eng.zip?st=o0s47X7R).
+
+Data is broken down by year and month, location, gender and age class.
+
+
+| Column       | Meaning                          |
+|--------------|----------------------------------|
+| id           | Unique identifier                |
+| year         | Year of survey                   |
+| quarter      | Annual quarter of survey (1 - 4) |
+| origin       | Province of origin               |
+| [NL -- Nvt.] | Province or territory (13 cols)  |
+| Total        | Total migration                  |
+
 
 ```{r getUsPopulation}
+
+if (!dir.exists("data/input/")) {
+  if (!dir.exists("data")) {
+    dir.create("data")
+  }
+  dir.create("data/input")
+}
+
 if (!file.exists("data/input/pop-by-zip-code.csv")) {
   download.file("https://query.data.world/s/alfepb4cfqwqaiegamf25yfoprleq2",
   "data/input/pop-by-zip-code.csv")
 }
 ```
+
+## Establishing connection with the database
+
+We create a PostgreSQL database for our data.  Both datasets include geographic data, at the provincial level.
+
+```{r dbConnect}
+
+# Build will fail if the file isn't there.
+assertthat::assert_that(file.exists('db_connect.txt'),
+  msg = "Your connection file is missing.")
+
+con_file <- readr::read_lines('db_connect.txt')
+
+con <- RPostgreSQL::dbConnect(
+             PostgreSQL(),
+             host = con_file[1],
+             port = con_file[2],
+             user = con_file[3],
+         password = con_file[4],
+           dbname = con_file[5])
+
+```
+
+### Initial Data Cleaning
+
+We want to remove NA values, and pare down the input data into a managable chunk.
+
+### Airbnb Listings Data
+
+We are going to remove some of the data.  In particular, any row that has an `NA` for the `VALUE` field in the labour market data.
+
+**Look at the code below, what other things are happening?  Describe them**  *the functions `filter()`, `select()`, `mutate()` and `transmute()` all come from the `dplyr` package.*
+The below code chunk checks if the data/input exists 
 
 
 ```{r cleanData}
@@ -118,8 +220,24 @@ if (!file.exists('data/output/airbnb-listings.rds')) {
 } else {
   file_reduced <- readRDS('data/output/airbnb-listings.rds')
 }
+
+
+#Create a new data frame that exclude Price == NA
+file_cna2 <- file_reduced[!is.na(file_reduced$price),]
+file_cna2$host_since <- as.Date(file_cna2$host_since, format = '%Y-%m-%d')
 ```
 
+## Adding column property_id in the airbnb dataset
+
+```{r add property_id}
+
+file_cna2$property_id <- seq.int(nrow(file_cna2))
+
+```
+
+### Population Data
+
+**Look at the code below, what is happening?  Describe it**  *the functions `filter()`, `select()`, and `mutate()` come from the `dplyr` package.  The function `gather()` comes from `tidyr`.*
 
 
 ```{r readPopulation}
@@ -138,6 +256,11 @@ if (!file.exists('data/output/population.rds')) {
   population <- readRDS('data/output/population.rds')
 }
 ```
+
+### US Zipcodes Data
+
+**Look at the code below, what is happening?  Describe it**  *the functions `filter()`, `select()`, and `mutate()` come from the `dplyr` package.  The function `gather()` comes from `tidyr`.*
+
 
 ```{r readLocation}
 if (!file.exists('data/output/match_zip_city.rds')) {
@@ -161,204 +284,10 @@ if (!file.exists('data/output/match_zip_city.rds')) {
 
 ```
 
+## Table Creation
 
+When we push data into the database, we do the same thing each time.  We can wrap this in a function.  The function `post_data()` deletes the table and any keys or indexes we have made, before creating the table again.  This ensures you can run the script multiple times without errors.
 
-## Import File and show column names
-```{r}
-#file_clean_na <- "data/clean_na.csv"
-#file_cna <- read.csv(file_clean_na, header = TRUE)
-
-total_row <- nrow(file_reduced)
-total_col <- ncol(file_reduced)
-colnames(file_reduced)
-```
-
-There are about `r total_row` rows and `r total_col` columns.
-## Columns and its data type
-```{r}
-glimpse(file_reduced)
-```
-
-## City
-```{r}
-city_summary <- file_reduced %>%
-                  group_by(city) %>%
-                  count()
-nrow(city_summary)
-```
-
-There are about `r nrow(city_summary)` unique registered cities from the listings.
-
-```{r}
-uniq_city <- unique(file_reduced$city)
-head(uniq_city, 10)
-```
-
-```{r}
-tail(uniq_city,10)
-```
-
-## State
-```{r}
-state_summary <- file_reduced %>%
-                  group_by(state) %>%
-                  count()
-nrow(state_summary)
-```
-
-
-```{r}
-head(state_summary)
-```
-
-
-```{r}
-tail(state_summary)
-```
-## Cancelation Policy
-```{r}
-cancel_summary <- file_reduced %>%
-                  group_by(cancellation_policy) %>%
-                  summarise(cancel_pol = n()) %>%
-                  arrange(desc = cancel_pol) %>%
-                  head()
-
-```
-
-```{r}
-#barplot(cancel_summary$cancel_pol,
-        #xlab = 'Cancelation Policy',
-        #ylab = 'Total')
-
-#axis(side = 1, at = seq_along(cancel_summary$cancel_pol)  - 0.5, tick = FALSE, labels = cancel_summary$cancellation.policy)
-ggplot(cancel_summary, aes(x = cancel_summary$cancellation_policy, y = cancel_summary$cancel_pol)) + geom_col()
-
-```
-
-## Unique Property
-```{r}
-uniq_type <- file_reduced %>%
-                  group_by(property_type) %>%
-                  summarise(proper_type = n()) %>%
-                  arrange(desc(proper_type)) %>%
-                  head(10)
-
-ggplot(uniq_type, aes(x = uniq_type$property_type, y = uniq_type$proper_type)) +
-  geom_col() + theme(axis.text.x = element_text(angle = 90)) +geom_text(aes(label=proper_type), position=position_dodge(width=0.9), vjust=-0.25)
-```
-
-
-## Price
-```{r}
-# Count the number of rows in price column that has NA
-sum(is.na(file_reduced$price))
-
-```
-
-```{r}
-#Create a new data frame that exclude Price == NA
-file_cna2 <- file_reduced[!is.na(file_reduced$price),]
-row_substracted <- nrow(file_reduced) - nrow(file_cna2)
-row_substracted
-```
-```{r convertToDate}
-file_cna2$host_since <- as.Date(file_cna2$host_since, format = '%Y-%m-%d')
-#file_cna2$first_review <- as.Date(file_cna2$first.review, format = '%Y-%m-%d')
-#file_cna2$last.review <- as.Date(file_cna2$last.review, format = '%Y-%m-%d')
-#file_cna2$calendar.last.scraped <- as.Date(file_cna2$calendar.last.scraped, format = '%Y-%m-%d')
-```
-
-
-
-```{r}
-#remove 5-experience offered
-#remove 14-host verification
-#remove 16-neighborhoos.cleansed
-#remove 17-Neighborhood.group cleansed
-#remove 22-smart location
-#remove 24-country.country code already exist.
-#remove 34
-#remove 40-cleaning fee
-#remove 66-geolocation(data already contain longitude and latitude)
-
-#col_remove <- c(5, 14, 16, 17, 22, 24, 34, 40, 66)
-#file_cna3 <- file_cna2[-col_remove]
-```
-
-```{r}
-#file price in different zipcode
-zip_price_avg_ca <- file_cna2 %>%
-                    filter(country_code == 'CA') %>%
-                    group_by(zipcode)%>%
-                    summarise(avg_price = mean(price)) %>%
-                    arrange(desc(avg_price))
-
-zip_price_avg_us <- file_cna2 %>%
-                    filter(country_code == 'US') %>%
-                    group_by(zipcode)%>%
-                    summarise(avg_price = mean(price)) %>%
-                    arrange(desc(avg_price))
-
-```
-
-
-{r checkUniqueKey}
-unique_key <- file_cna3 %>%
-                distinct(host.id) %>%
-                nrow
-print(unique_key)
-
-unique_key2 <- file_cna3 %>%
-                distinct(host.id) %>%
-                nrow
-print(unique_key2)
-
-
-## Establishing connection with the database
-
-We create a PostgreSQL database for our data.  Both datasets include geographic data, at the provincial level.
-
-```{r dbConnect}
-
-# Build will fail if the file isn't there.
-assertthat::assert_that(file.exists('db_connect.txt'),
-  msg = "Your connection file is missing.")
-
-con_file <- readr::read_lines('db_connect.txt')
-
-con <- RPostgreSQL::dbConnect(
-             PostgreSQL(),
-             host = con_file[1],
-             port = con_file[2],
-             user = con_file[3],
-         password = con_file[4],
-           dbname = con_file[5])
-
-```
-
-
-## Adding column property_id in the dataset
-
-```{r add property_id}
-
-file_cna2$property_id <- seq.int(nrow(file_cna2))
-
-```
-
-
-## Creating datasets to be written to the database
-
-```{r create dataframes for tables to be created in the database}
-
-host_data <- unique(file_cna2[c('host_id', 'host_since')])
-
-host_desc <- unique(file_cna2[c('host_id', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')])
-
-property <- file_cna2[c('property_id', 'zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accommodates', 'price', 'number_of_reviews', 'cancellation_policy')]
-
-reviews <- file_cna2[c('property_id', 'review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
-
-```
 
 
 ## Creating function that will be called to write all the tables in the database
@@ -379,10 +308,13 @@ post_data <- function(con, x, tablename = "") {
 }
 ```
 
-
 ## Write tables to the database
 
-```{r Write tables to database}
+### Table: Reviews
+
+```{r writeTableReview}
+
+reviews <- file_cna2[c('property_id', 'review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
 
 post_data(con,
             data.frame(review_id = 1:nrow(reviews),reviews),
@@ -394,15 +326,35 @@ dbExecute(con,
   "CREATE UNIQUE INDEX review_idx ON reviews (review_id)")
 
 
+```
+
+### Table: Host
+
+```{r writeTableHost}
+
+host_data <- unique(file_cna2[c('host_id', 'host_since')])
+
 post_data(con,
             host_data,
             "host")
 dbExecute(con,
   "CREATE UNIQUE INDEX host_idx ON host (host_id)")
+```
+
+### Table: Host Details
+
+```{r writeTableHostDetails}
+
+host_desc <- unique(file_cna2[c('host_id', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')])
 
 post_data(con,
             host_desc,
             "host_details")
+```
+
+### Table: Location
+
+```{r writeTableLocation}
 
 post_data(con,
             us_zip,
@@ -410,6 +362,13 @@ post_data(con,
 
 dbExecute(con,
   "CREATE UNIQUE INDEX zip_x ON location (zip)")
+```
+
+### Table: Property
+
+```{r writeTableProperty}
+
+property <- file_cna2[c('property_id', 'zipcode', 'host_id', 'minimum_nights', 'property_type', 'room_type', 'accommodates', 'price', 'number_of_reviews', 'cancellation_policy')]
 
 post_data(con,
             property,
@@ -420,15 +379,19 @@ dbExecute(con,
 
 dbExecute(con,
   "CREATE UNIQUE INDEX property_idx ON property (property_id)")
+```
+
+### Table: Population
+
+```{r writeTablePopulation}
 
 post_data(con,
             data.frame(population),
             "population")
 dbExecute(con,
   "CREATE UNIQUE INDEX zip_code_popx ON population (zip_code_pop)")
-
-
 ```
+
 
 ## List all tables present in the database
 
@@ -437,9 +400,9 @@ dbListTables(con)
 ```
 
 
-## Get data from database
+## Get data from database that will be used to do the analysis and plot graphs
 
-```{r GetData}
+```{r GetDataset1}
 
 dataset1 = dbGetQuery(con, "
   SELECT L.city,
@@ -452,11 +415,10 @@ dataset1 = dbGetQuery(con, "
   GROUP BY L.city
 ")
 
-dataset1
 ```
 
 
-```{r GetData}
+```{r GetDataset2}
 
 dataset2 = dbGetQuery(con, "
   SELECT H.host_id,
@@ -478,8 +440,13 @@ dataset2 = dbGetQuery(con, "
 	INNER JOIN host_details HD ON H.host_id = HD.host_id
 ")
 
-dataset2
 ```
+
+## Analysis
+
+### Question One
+
+**Does the review score rating affect the demand of Airbnb(total listings)? How does it affect the demand? Positively or negatively? Slightly or heavily?**
 
 ```{r}
 review_vs_rating <- dataset2 %>%
@@ -489,12 +456,33 @@ ggplot(review_vs_rating, aes(x = review_score_rating, y = no_of_bookings)) + geo
 ```
 
 
+### Question Two
+
+**Does price have a significant impact on the demand of Airbnb (total bookings) in NYC? In medium-sized cities? And small-sized ones?**
+
 ```{r}
 price_vs_numberReviews <- dataset2 %>%
                     filter(!is.na(price) & !is.na(no_of_bookings))
 
 ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'bin', binwidth = 30, col = 'red', fill = 'blue') +labs(x = 'Price (USD)',y='Number of Bookings') + ggtitle("Popular Price Range for AirBnb Listings")
 ```
+
+
+### Question Three
+
+**Do cities with larger population lead to more total bookings as compared to cities with lesser population? What is the trend?**
+
+```{r}
+dataset1_sorted <- dataset1 %>%
+  arrange(desc(no_of_bookings)) %>%
+  head(20)
+
+ggplot(dataset1_sorted, aes(x = pop_density, y = no_of_bookings, color = price)) +geom_point(size = 5) + labs(x= 'Population Density', y= 'Number of Bookings') + ggtitle("Number of Bookings vs. Population Density in the Top 20 Cities")
+```
+
+### Question Four
+
+**Comparing the minimum nights for 1/2/3/4/5/6, does specific minimum nights requirement have more demand as compared to others? Do customers intend to stay for longer prefer using Airbnb or customers with the need of one night stay?**
 
 ```{r}
 minimum_nights_booking <- dataset2 %>%
@@ -504,18 +492,8 @@ minimum_nights_booking <- dataset2 %>%
 ggplot(minimum_nights_booking, aes(x = minimum_nights, y = no_of_bookings, color=room_type)) + geom_point() +labs(x = 'Minimum Night (Day)', y='Number of Bookings') + ggtitle("Length of Stay of Airbnb Users")
 ```
 
-```{r}
-#ggplot(dataset1, aes(x = pop_density, y = no_of_bookings)) + geom_tile(aes(fill=price), color = 'white')  + scale_fill_gradient(low = "white", high = "steelblue")
+## Conclusions
 
-ggplot(dataset1, aes(x = pop_density, y = no_of_bookings)) + geom_point()
+# References
 
-```
-
-
-```{r}
-dataset1_sorted <- dataset1 %>%
-  arrange(desc(no_of_bookings)) %>%
-  head(20)
-
-ggplot(dataset1_sorted, aes(x = pop_density, y = no_of_bookings, color = price)) +geom_point(size = 5) + labs(x= 'Population Density', y= 'Number of Bookings') + ggtitle("Number of Bookings vs. Population Density in the Top 20 Cities")
-```
+Statistics Canada. Table 051-0045 - Interprovincial migrants, by province or territory of origin and destination, quarterly (persons), CANSIM (database). (accessed: 2019 Q1)
