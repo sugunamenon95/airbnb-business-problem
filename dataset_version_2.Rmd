@@ -1,10 +1,12 @@
 ---
-title: Airbnb business insights
+title: "Airbnb business insights"
 author:
-  - affiliation: UBC Sauder School of Business
-    name: Teguh Samudra, Zhuoya Wang, Henry Deng, Suguna Menon
-date: "October 2, 2019"
+- affiliation: UBC Sauder School of Business
+  name: Teguh Samudra, Zhuoya Wang, Henry Deng, Suguna Menon
+date: "October 4, 2019"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     code_folding: show
     fig_caption: yes
@@ -13,8 +15,8 @@ output:
     theme: readable
     toc: yes
     toc_float: yes
-dev: svg
 highlight: tango
+dev: svg
 ---
 
 ## Problem Statement
@@ -43,17 +45,19 @@ library(stringi)
 
 ### Airbnb listings in US
 
-The data comes from OpenDataSoft  (https://public.opendatasoft.com/explore/dataset/airbnb-listings/table/?disjunctive.host_verifications&disjunctive.amenities&disjunctive.features) and represents estimates of interprovincial migration from 1971 -- 2019.  Values in the table indicate the year and annual quarter of observation, the source province (in rows) and then the number of individuals migrating to each of the provinces and territories in Canada across the columns.
-
-| Column       | Meaning                          |
-|--------------|----------------------------------|
-| id           | Unique identifier                |
-| year         | Year of survey                   |
-| quarter      | Annual quarter of survey (1 - 4) |
-| origin       | Province of origin               |
-| [NL -- Nvt.] | Province or territory (13 cols)  |
-| Total        | Total migration                  |
-
+The data comes from OpenDataSoft  (https://public.opendatasoft.com/explore/dataset/airbnb-listings/table/?disjunctive.host_verifications&disjunctive.amenities&disjunctive.features) and contains the airbnb listing details alongwith host information, property description and reviews given by the customers across various countries in the world. In this dataset, we will assume the number of reviews to be the number of bookings for any particular airbnb property.
+   
+| Column              | Meaning                                    |
+|---------------------|--------------------------------------------|
+| host_id             | Unique identifier for host                 |
+| property_type       | Type of the airbnb unit                    |
+| minimum_nights      | Minimum night booking required             |
+| number_of_reviews   | Number of reviews attained by the property |
+| review_score_rating | Rating score out of 100                    |
+| cancellation_policy | Cancellation policy for the unit           |
+| city                | city where the unit is present             |
+| zipcode             | zipcode of the area                        |
+| price               | price of the property                      |
 
 ```{r getAirbnbListing}
 
@@ -73,18 +77,14 @@ if (!file.exists("data/input/airbnb-listings.csv")) {
 
 ### Zipcode and location data for United States
 
-Statistics Canada reports [monthly estimates of employment across Canadian provinces](https://www150.statcan.gc.ca/n1/en/tbl/csv/14100017-eng.zip?st=o0s47X7R).
+The data comes from SimpleMaps (https://simplemaps.com/) and contains the list of zipcodes, cities and states in the United States. We have taken this dataset to basically map the correct cities to airbnb listings data via zipcode.
 
-Data is broken down by year and month, location, gender and age class.
 
-| Column       | Meaning                          |
-|--------------|----------------------------------|
-| id           | Unique identifier                |
-| year         | Year of survey                   |
-| quarter      | Annual quarter of survey (1 - 4) |
-| origin       | Province of origin               |
-| [NL -- Nvt.] | Province or territory (13 cols)  |
-| Total        | Total migration                  |
+| Column              | Meaning                                    |
+|---------------------|--------------------------------------------|
+| zipcode             | zipcode of all the areas in US             |
+| city                | Cities in the US                           |
+| state               | states in the US                           |
 
 
 ```{r getUSZipcodes}
@@ -106,19 +106,15 @@ if (!file.exists("data/input/simplemaps_uszips_basicv1.6.zip")) {
 
 ### United States population
 
-Statistics Canada reports [monthly estimates of employment across Canadian provinces](https://www150.statcan.gc.ca/n1/en/tbl/csv/14100017-eng.zip?st=o0s47X7R).
-
-Data is broken down by year and month, location, gender and age class.
+The data comes from US government data website (https://www.data.gov/) and contains the population for last 3 years for each city in the United States. Zipcode is the unique identifier in this dataset.
 
 
-| Column       | Meaning                          |
-|--------------|----------------------------------|
-| id           | Unique identifier                |
-| year         | Year of survey                   |
-| quarter      | Annual quarter of survey (1 - 4) |
-| origin       | Province of origin               |
-| [NL -- Nvt.] | Province or territory (13 cols)  |
-| Total        | Total migration                  |
+| Column              | Meaning                                    |
+|---------------------|--------------------------------------------|
+| zipcode             | zipcode of all the areas in US             |
+| city                | Cities in the US                           |
+| population          | Population                                 |
+| Year                | Year                                       |  
 
 
 ```{r getUsPopulation}
@@ -138,7 +134,7 @@ if (!file.exists("data/input/pop-by-zip-code.csv")) {
 
 ## Establishing connection with the database
 
-We create a PostgreSQL database for our data.  Both datasets include geographic data, at the provincial level.
+Before running the below code, ensure that the relevant database has been created in your server. THe below code establishes a connection with the database.
 
 ```{r dbConnect}
 
@@ -164,10 +160,7 @@ We want to remove NA values, and pare down the input data into a managable chunk
 
 ### Airbnb Listings Data
 
-We are going to remove some of the data.  In particular, any row that has an `NA` for the `VALUE` field in the labour market data.
-
-**Look at the code below, what other things are happening?  Describe them**  *the functions `filter()`, `select()`, `mutate()` and `transmute()` all come from the `dplyr` package.*
-The below code chunk checks if the data/input exists 
+We are going to remove some of the data.  In particular, all the irrelevant columns will be filtered and other columns will be renamed. As we will be doing analysis only for United States, we will be filtering the data based on country code. We will also filter the property types which are irrelavant or seem to be an outlier for our analysis.
 
 
 ```{r cleanData}
@@ -227,7 +220,9 @@ file_cna2 <- file_reduced[!is.na(file_reduced$price),]
 file_cna2$host_since <- as.Date(file_cna2$host_since, format = '%Y-%m-%d')
 ```
 
-## Adding column property_id in the airbnb dataset
+### Adding column property_id in the airbnb dataset
+
+The below code adds a column named 'property_id' which will uniquely identify each property.
 
 ```{r add property_id}
 
@@ -237,8 +232,7 @@ file_cna2$property_id <- seq.int(nrow(file_cna2))
 
 ### Population Data
 
-**Look at the code below, what is happening?  Describe it**  *the functions `filter()`, `select()`, and `mutate()` come from the `dplyr` package.  The function `gather()` comes from `tidyr`.*
-
+Here, we include population data only for the year 2016 and rename the columns.
 
 ```{r readPopulation}
 if (!file.exists('data/output/population.rds')) {
@@ -259,7 +253,7 @@ if (!file.exists('data/output/population.rds')) {
 
 ### US Zipcodes Data
 
-**Look at the code below, what is happening?  Describe it**  *the functions `filter()`, `select()`, and `mutate()` come from the `dplyr` package.  The function `gather()` comes from `tidyr`.*
+Here, we keep the entire dataset, just rename teh columns.
 
 
 ```{r readLocation}
@@ -286,8 +280,7 @@ if (!file.exists('data/output/match_zip_city.rds')) {
 
 ## Table Creation
 
-When we push data into the database, we do the same thing each time.  We can wrap this in a function.  The function `post_data()` deletes the table and any keys or indexes we have made, before creating the table again.  This ensures you can run the script multiple times without errors.
-
+When we push data into the database, we do the same thing each time.  We can wrap this in a function.  The function `post_data()` deletes the table and any keys or indexes we have made, before creating the table again.
 
 
 ## Creating function that will be called to write all the tables in the database
@@ -309,26 +302,11 @@ post_data <- function(con, x, tablename = "") {
 ```
 
 ## Write tables to the database
-
-### Table: Reviews
-
-```{r writeTableReview}
-
-reviews <- file_cna2[c('property_id', 'review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
-
-post_data(con,
-            data.frame(review_id = 1:nrow(reviews),reviews),
-            "reviews")
-
-dbExecute(con,
-  "ALTER TABLE reviews ADD PRIMARY KEY (review_id)")
-dbExecute(con,
-  "CREATE UNIQUE INDEX review_idx ON reviews (review_id)")
-
-
-```
+The three datasets downloaded at the beginning have been broken down into normalized tables. These tables will be inserted into the database using the connection established earlier.
 
 ### Table: Host
+
+After inserting this table into the database, we create an index on the host_id for fast retrieval of data.
 
 ```{r writeTableHost}
 
@@ -343,6 +321,8 @@ dbExecute(con,
 
 ### Table: Host Details
 
+As the airbnb listings dataset can have the same host repeated multiple times, we retieve the unque host details and insert it into host_desc table.
+
 ```{r writeTableHostDetails}
 
 host_desc <- unique(file_cna2[c('host_id', 'host_location', 'host_response_time', 'host_total_listings_count', 'host_listings_count')])
@@ -350,9 +330,14 @@ host_desc <- unique(file_cna2[c('host_id', 'host_location', 'host_response_time'
 post_data(con,
             host_desc,
             "host_details")
+
+dbExecute(con, "ALTER TABLE host_details ADD CONSTRAINT hidx FOREIGN KEY (host_id) REFERENCES host (host_id) MATCH FULL")
+
 ```
 
 ### Table: Location
+
+After inserting this table into the database, we create an index on the zipcode for fast retrieval of data.
 
 ```{r writeTableLocation}
 
@@ -361,10 +346,12 @@ post_data(con,
             "location")
 
 dbExecute(con,
-  "CREATE UNIQUE INDEX zip_x ON location (zip)")
+  "ALTER TABLE location ADD PRIMARY KEY (zip)")
 ```
 
 ### Table: Property
+
+After inserting this table into the database, teh column property_id is set as the primary key for the table. We also create an index on this column for fast retrieval of data.
 
 ```{r writeTableProperty}
 
@@ -377,11 +364,38 @@ post_data(con,
 dbExecute(con,
   "ALTER TABLE property ADD PRIMARY KEY (property_id)")
 
+dbExecute(con, "ALTER TABLE property ADD CONSTRAINT hid FOREIGN KEY (host_id) REFERENCES host (host_id) MATCH FULL")
+
 dbExecute(con,
   "CREATE UNIQUE INDEX property_idx ON property (property_id)")
 ```
 
+### Table: Reviews
+
+While inserting this table into the database, we create a column called review_id. This is later set as the primary key for the table. We also create an index on the review_id for fast retrieval of data.
+
+```{r writeTableReview}
+
+reviews <- file_cna2[c('property_id', 'review_score_rating', 'review_score_cleanliness', 'review_score_accuracy', 'review_score_checkin', 'review_score_location')]
+
+post_data(con,
+            data.frame(review_id = 1:nrow(reviews),reviews),
+            "reviews")
+
+dbExecute(con,
+  "ALTER TABLE reviews ADD PRIMARY KEY (review_id)")
+
+dbExecute(con, "ALTER TABLE reviews ADD CONSTRAINT pid FOREIGN KEY (property_id) REFERENCES property (property_id) MATCH FULL")
+
+dbExecute(con,
+  "CREATE UNIQUE INDEX review_idx ON reviews (review_id)")
+
+
+```
+
 ### Table: Population
+
+After inserting this table into the databse, we set an index on the zipcode column for fast retrieval of the data.
 
 ```{r writeTablePopulation}
 
@@ -390,6 +404,7 @@ post_data(con,
             "population")
 dbExecute(con,
   "CREATE UNIQUE INDEX zip_code_popx ON population (zip_code_pop)")
+
 ```
 
 
@@ -401,6 +416,8 @@ dbListTables(con)
 
 
 ## Get data from database that will be used to do the analysis and plot graphs
+
+This is the first dataset that we retrieve from our database. It summarizes the city wise number of bookings, population and price of the airbnb units.
 
 ```{r GetDataset1}
 
@@ -417,6 +434,8 @@ dataset1 = dbGetQuery(con, "
 
 ```
 
+
+Our second dataset retrieves data about the host, property price, property location and its characteristics like room type, minimum nights, number of bookings made for each property and the review scores given by customers for each property.
 
 ```{r GetDataset2}
 
@@ -446,7 +465,9 @@ dataset2 = dbGetQuery(con, "
 
 ### Question One
 
-**Does the review score rating affect the demand of Airbnb(total listings)? How does it affect the demand? Positively or negatively? Slightly or heavily?**
+Does the review score rating affect the demand of Airbnb(total listings)? How does it affect the demand? Positively or negatively? Slightly or heavily?
+
+As part of this question. we want to explore the relationship between the the number of bookings and the rating score given by the customers. According to the graph, it is obvious that the number of bookings and the rating score has a positive effect to each other. From this analysis, we can conclude that the good rating score affects the Airbnb demand. From Airbnb management's perspective, the company can encourage the hosts to improve the quality of their services, which will lead to good review scores as well as an increase in the demand for that airbnb unit.
 
 ```{r}
 review_vs_rating <- dataset2 %>%
@@ -458,7 +479,9 @@ ggplot(review_vs_rating, aes(x = review_score_rating, y = no_of_bookings)) + geo
 
 ### Question Two
 
-**Does price have a significant impact on the demand of Airbnb (total bookings) in NYC? In medium-sized cities? And small-sized ones?**
+Does price have a significant impact on the demand of Airbnb (total bookings) in NYC? In medium-sized cities? And small-sized ones?
+
+This graph illustrates the relationship between the demand and price range of airbnb units. We can observe that the price range for highest demand is between $40-$60, and then the demand decreases as the price increases. However, for the price under $40, the demand is lower than the range $40-$120 because the customer may have minimum standard for the safety, quality, etc for the listing. We can conclude that from the Airbnb management perspective, Airbnb can focus on providing more listings in the $40-$100 price range. Furthermore, for the price around $500, it is popular compared to $400 and $600’s listings because the customers are not only looking for economical accommodation, but also the quality and environment of the listings. Therefore, Airbnb can focus on specific customer group, earn profit from customers have high consuming ability.
 
 ```{r}
 price_vs_numberReviews <- dataset2 %>%
@@ -470,7 +493,10 @@ ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'bin', bi
 
 ### Question Three
 
-**Do cities with larger population lead to more total bookings as compared to cities with lesser population? What is the trend?**
+Do cities with larger population lead to more total bookings as compared to cities with lesser population? What is the trend?
+
+This graph aims to analyze the relationship between the population in the cities and the number of bookings. The darker the color of the bubbles, more is the price of airbnb there. Our assumption for analysis was to identify if the population of a specific city plays any role in affecting the demand or the pricing of airbnbs in that particular city. However, from this graph, we see that the points are quite scattered and there is no consistent relation between population, price and demand. It can be due to outliers in the data as well. We can safely assume a slightly positive correlation between demand (number of bookings) and population. However, we can not make any business perspective suggestions from this analysis.
+
 
 ```{r}
 dataset1_sorted <- dataset1 %>%
@@ -482,7 +508,9 @@ ggplot(dataset1_sorted, aes(x = pop_density, y = no_of_bookings, color = price))
 
 ### Question Four
 
-**Comparing the minimum nights for 1/2/3/4/5/6, does specific minimum nights requirement have more demand as compared to others? Do customers intend to stay for longer prefer using Airbnb or customers with the need of one night stay?**
+Comparing the minimum nights for 1/2/3/4/5/6, does specific minimum nights requirement have more demand as compared to others? Do customers intend to stay for longer prefer using Airbnb or customers with the need of one night stay?
+
+This graph showcases the relationship between number of bookings and minimum night required to stay. As per the analysis, the demand for 1 night stay is the highest. However, the demand decreases as the minimum night required to stay increases. This trend ends when the minimum night of staying approaches to 30 days. From this analysis, we can conclude that the demand for 1-4 nights of staying is the highest, the Airbnb can recruit more hosts with the short-term available properties. On the other hand, Airbnb can also recruit more hosts with long-term (at least one-month) properties available.
 
 ```{r}
 minimum_nights_booking <- dataset2 %>%
@@ -494,6 +522,13 @@ ggplot(minimum_nights_booking, aes(x = minimum_nights, y = no_of_bookings, color
 
 ## Conclusions
 
+
 # References
 
-Statistics Canada. Table 051-0045 - Interprovincial migrants, by province or territory of origin and destination, quarterly (persons), CANSIM (database). (accessed: 2019 Q1)
+https://public.opendatasoft.com/explore/dataset/airbnb-listings/information/?disjunctive.host_verifications&disjunctive.amenities&disjunctive.features
+
+https://data.world/lukewhyte/us-population-by-zip-code-2010-2016
+
+https://ipropertymanagement.com/airbnb-statistics
+
+https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml
