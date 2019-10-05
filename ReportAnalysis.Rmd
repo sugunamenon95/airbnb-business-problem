@@ -485,9 +485,13 @@ This graph illustrates the relationship between the demand and price range of ai
 
 ```{r}
 price_vs_numberReviews <- dataset2 %>%
-                    filter(!is.na(price) & !is.na(no_of_bookings))
+                          filter(!is.na(price) & !is.na(no_of_bookings) & no_of_bookings != 0) %>%
+                          mutate(cuts = cut(price, c(0,50,100,150,200,250,300,350,400,450,500, Inf)))%>%
+                          group_by(cuts) %>%
+                          summarise(n = n()) %>%
+                          filter(!is.na(cuts))
 
-ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'density', binwidth = 30, col = 'red', fill = 'blue') +labs(x = 'Price (USD)',y='Number of Listings Density') + ggtitle("Popular Price Range for AirBnb Listings")
+ggplot(price_vs_numberReviews, aes(x = cuts, y=n)) + geom_col(fill =  'lightblue') + labs(x = 'Price Range (USD)',y='Number of Listings') + ggtitle("Popular Price Range for AirBnb Listings") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 
@@ -519,8 +523,6 @@ minimum_nights_booking <- dataset2 %>%
                     filter(minimum_nights <= 30) %>%
                     group_by(minimum_nights, room_type) %>%
                     summarise(avg_book = mean(no_of_bookings))
-                    #summarise(mean_night = mean(no_of_bookings))
-                    #count(no_of_bookings, minimum_nights)
                     
   
 ggplot(minimum_nights_booking, aes(minimum_nights, avg_book, color = room_type, fill = room_type)) + geom_col() +labs(x ='Minimum Night (Day)', y='Average Ratio of the Number of Bookings') + ggtitle("Length of Stay of Airbnb Users")
