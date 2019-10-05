@@ -470,10 +470,10 @@ Does the review score rating affect the demand of Airbnb(total listings)? How do
 As part of this question. we want to explore the relationship between the the number of bookings and the rating score given by the customers. According to the graph, it is obvious that the number of bookings and the rating score has a positive effect to each other. From this analysis, we can conclude that the good rating score affects the Airbnb demand. From Airbnb management's perspective, the company can encourage the hosts to improve the quality of their services, which will lead to good review scores as well as an increase in the demand for that airbnb unit.
 
 ```{r}
-review_vs_rating <- dataset2 %>%
-                    filter(!is.na(review_score_rating) & !is.na(no_of_bookings))
-
-ggplot(review_vs_rating, aes(x = review_score_rating, y = no_of_bookings)) + geom_point() +labs(x= 'Rating', y= 'Number of Bookings') + ggtitle("The Affect of Rating Score to Number of Bookings Received")
+rating_by_count <- dataset2 %>%
+                  filter(!is.na(review_score_rating) & !is.na(no_of_bookings)) %>%
+                  count(no_of_bookings, review_score_rating)
+ggplot(rating_by_count, aes(x = review_score_rating)) + geom_histogram(color = 'darkblue', fill = 'lightblue')+labs(x= 'Rating', y= 'Number of Listings') + ggtitle("The Affect of Rating Score to Number of Bookings Received")
 ```
 
 
@@ -487,7 +487,7 @@ This graph illustrates the relationship between the demand and price range of ai
 price_vs_numberReviews <- dataset2 %>%
                     filter(!is.na(price) & !is.na(no_of_bookings))
 
-ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'bin', binwidth = 30, col = 'red', fill = 'blue') +labs(x = 'Price (USD)',y='Number of Bookings') + ggtitle("Popular Price Range for AirBnb Listings")
+ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'density', binwidth = 30, col = 'red', fill = 'blue') +labs(x = 'Price (USD)',y='Number of Listings Density') + ggtitle("Popular Price Range for AirBnb Listings")
 ```
 
 
@@ -503,7 +503,7 @@ dataset1_sorted <- dataset1 %>%
   arrange(desc(no_of_bookings)) %>%
   head(20)
 
-ggplot(dataset1_sorted, aes(x = pop_density, y = no_of_bookings, color = price)) +geom_point(size = 5) + labs(x= 'Population Density', y= 'Number of Bookings') + ggtitle("Number of Bookings vs. Population Density in the Top 20 Cities")
+ggplot(dataset1_sorted, aes(x = pop_density, y = no_of_bookings, color = price)) +geom_point(size = 5) + labs(x= 'Population Density', y= 'Number of Listings') + ggtitle("Number of Bookings vs. Population Density in the Top 20 Cities")
 ```
 
 ### Question Four
@@ -512,13 +512,23 @@ Comparing the minimum nights for 1/2/3/4/5/6, does specific minimum nights requi
 
 This graph showcases the relationship between number of bookings and minimum night required to stay. As per the analysis, the demand for 1 night stay is the highest. However, the demand decreases as the minimum night required to stay increases. This trend ends when the minimum night of staying approaches to 30 days. From this analysis, we can conclude that the demand for 1-4 nights of staying is the highest, the Airbnb can recruit more hosts with the short-term available properties. On the other hand, Airbnb can also recruit more hosts with long-term (at least one-month) properties available.
 
+
 ```{r}
 minimum_nights_booking <- dataset2 %>%
-                    filter(!is.na(minimum_nights) & !is.na(no_of_bookings)) %>%
-                    filter(minimum_nights <= 30)
+                    filter(!is.na(minimum_nights) & !is.na(no_of_bookings & no_of_bookings != 0)) %>%
+                    filter(minimum_nights <= 30) %>%
+                    group_by(minimum_nights, room_type) %>%
+                    summarise(avg_book = mean(no_of_bookings))
+                    #summarise(mean_night = mean(no_of_bookings))
+                    #count(no_of_bookings, minimum_nights)
+                    
+  
+ggplot(minimum_nights_booking, aes(minimum_nights, avg_book, color = room_type, fill = room_type)) + geom_col() +labs(x ='Minimum Night (Day)', y='Average Ratio of the Number of Bookings') + ggtitle("Length of Stay of Airbnb Users")
 
-ggplot(minimum_nights_booking, aes(x = minimum_nights, y = no_of_bookings, color=room_type)) + geom_point() +labs(x = 'Minimum Night (Day)', y='Number of Bookings') + ggtitle("Length of Stay of Airbnb Users")
 ```
+
+
+
 
 ## Conclusions
 
