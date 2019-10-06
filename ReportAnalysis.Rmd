@@ -21,7 +21,7 @@ dev: svg
 
 ## Problem Statement
 
-What are the key factors that affect the demand for Airbnb among cities in the US?
+What key factors affect the demand of Airbnb in US cities?
 
 We are interested in the business domain of home-sharing services. We decide to work on analyzing some key factors resulting in the different demand among US cities. By knowing analyzing these questions, we believe it will help improve Airbnb’s performance in the cities with low demand.
 
@@ -134,7 +134,7 @@ if (!file.exists("data/input/pop-by-zip-code.csv")) {
 
 ## Establishing connection with the database
 
-Before running the below code, ensure that the relevant database has been created in your server. THe below code establishes a connection with the database.
+Before running the below code, the relevant database should be created in the Postgres server. The below code establishes a connection with that specific database. Additionally, the db_connect.txt file that contains the credentials to connect to the database should also be present in the current working directory.
 
 ```{r dbConnect}
 
@@ -465,7 +465,7 @@ dataset2 = dbGetQuery(con, "
 
 ### Question One
 
-Does the review score rating affect the demand of Airbnb(total listings)? How does it affect the demand? Positively or negatively? Slightly or heavily?
+**Does the review score rating affect the demand of Airbnb(total listings)? How does it affect the demand? Positively or negatively? Slightly or heavily?**
 
 As part of this question. we want to explore the relationship between the the number of bookings and the rating score given by the customers. According to the graph, it is obvious that the number of bookings and the rating score has a positive effect to each other. From this analysis, we can conclude that the good rating score affects the Airbnb demand. From Airbnb management's perspective, the company can encourage the hosts to improve the quality of their services, which will lead to good review scores as well as an increase in the demand for that airbnb unit.
 
@@ -479,7 +479,7 @@ ggplot(rating_by_count, aes(x = review_score_rating)) + geom_histogram(color = '
 
 ### Question Two
 
-Does price have a significant impact on the demand of Airbnb (total bookings) in NYC? In medium-sized cities? And small-sized ones?
+**Does price have a significant impact on the demand of Airbnb (total bookings) in NYC? In medium-sized cities? And small-sized ones?**
 
 This graph illustrates the relationship between the demand and price range of airbnb units. We can observe that the price range for highest demand is between $40-$60, and then the demand decreases as the price increases. However, for the price under $40, the demand is lower than the range $40-$120 because the customer may have minimum standard for the safety, quality, etc for the listing. We can conclude that from the Airbnb management perspective, Airbnb can focus on providing more listings in the $40-$100 price range. Furthermore, for the price around $500, it is popular compared to $400 and $600’s listings because the customers are not only looking for economical accommodation, but also the quality and environment of the listings. Therefore, Airbnb can focus on specific customer group, earn profit from customers have high consuming ability.
 
@@ -493,7 +493,7 @@ ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'density'
 
 ### Question Three
 
-Do cities with larger population lead to more total bookings as compared to cities with lesser population? What is the trend?
+**Do cities with larger population lead to more total bookings as compared to cities with lesser population? What is the trend?**
 
 This graph aims to analyze the relationship between the population in the cities and the number of bookings. The darker the color of the bubbles, more is the price of airbnb there. Our assumption for analysis was to identify if the population of a specific city plays any role in affecting the demand or the pricing of airbnbs in that particular city. However, from this graph, we see that the points are quite scattered and there is no consistent relation between population, price and demand. It can be due to outliers in the data as well. We can safely assume a slightly positive correlation between demand (number of bookings) and population. However, we can not make any business perspective suggestions from this analysis.
 
@@ -508,9 +508,9 @@ ggplot(dataset1_sorted, aes(x = pop_density, y = no_of_bookings, color = price))
 
 ### Question Four
 
-Comparing the minimum nights for 1/2/3/4/5/6, does specific minimum nights requirement have more demand as compared to others? Do customers intend to stay for longer prefer using Airbnb or customers with the need of one night stay?
+**Comparing the minimum nights for 1/2/3/4/5/6, does specific minimum nights requirement have more demand as compared to others? Do customers intend to stay for longer prefer using Airbnb or customers with the need of one night stay?**
 
-This graph showcases the relationship between number of bookings and minimum night required to stay. As per the analysis, the demand for 1 night stay is the highest. However, the demand decreases as the minimum night required to stay increases. This trend ends when the minimum night of staying approaches to 30 days. From this analysis, we can conclude that the demand for 1-4 nights of staying is the highest, the Airbnb can recruit more hosts with the short-term available properties. On the other hand, Airbnb can also recruit more hosts with long-term (at least one-month) properties available.
+This graph showcases the relationship between average number of bookings and minimum night required to stay. As per the analysis, the demand for 1 night stay is the highest. However, the graph shows a decrease in the demand for the units that require minimum 5-25 nights. It again increases when the minium nights required approaches 30 days. From this analysis, we can conclude that the demand for 1-4 nights of staying is the highest, the Airbnb can recruit more hosts with the short-term available properties. On the other hand, Airbnb can also recruit more hosts with long-term (at least one-month) properties available. Another perspective of analysis from this graph is the type pf property that is in demand. Overall, it can be observed that the private rooms and entire homes are more in demand as compared to the shared rooms, irrespective of the minimum nights criteria. So, either the listings for private rooms and entire homes should be increased so as to be more profitable. On the other hand, the reason for less demand of shared rooms should be identified and the hosts can improve on it. In this way, there is a possibility to get more demand for shared rooms as well. 
 
 
 ```{r}
@@ -528,10 +528,17 @@ ggplot(minimum_nights_booking, aes(minimum_nights, avg_book, color = room_type, 
 ```
 
 
-
-
 ## Conclusions
 
+In this project, we have worked on analyzing the business domain in a big picture, finalizing the industry and a business problem, gathering and preprocessing the data that relates to the problem statement, connecting and creating the database, retrieving data from database and plotting graphs to help us analyze the data visually. We have broken down our general question into four specific questions and tried to answer them in a data-driven way so that we can offer valuable business insights.
+We have included sufficient details in our rmd file for each question. 
+
+As a brief conclusion, based on the research and our analysis in this project, we can provide the following business insights to Airbnb.
+1. Encourage more customers to leave positive reviews by offering promos via emails because we could figure out that there is a direct relationship between positive ratings and the number of bookings. 
+2. We also know that renting an entire house or apartment or private room is the most popular option which occupies the most market demand. We suggest Airbnb to add more listings on entire property renting instead of shared-room type. On the other hand, the reason for less demand for shared rooms can be identified and the hosts can work and improve on it.
+3. Based on the relationship between pricing and demand, airbnb can focus on specific consumer group, earn profit from customers having high comsuming ability. This would also depend on the data which helps us analyse the relation between between consumer demographics based on their affluence and the demand for airbnb. However, as this data is unavailable, we cannot comment anything on this perspective of the analysis.
+
+Thanks for reviewing our project!
 
 # References
 
