@@ -45,12 +45,12 @@ library(stringi)
 
 ### Airbnb listings in US
 
-The data comes from OpenDataSoft  (https://public.opendatasoft.com/explore/dataset/airbnb-listings/table/?disjunctive.host_verifications&disjunctive.amenities&disjunctive.features) and contains the airbnb listing details alongwith host information, property description and reviews given by the customers across various countries in the world. In this dataset, we will assume the number of reviews to be the number of bookings for any particular airbnb property.
+The data comes from OpenDataSoft  (https://public.opendatasoft.com/explore/dataset/airbnb-listings/table/?disjunctive.host_verifications&disjunctive.amenities&disjunctive.features) and contains the Airbnb listing details alongwith host information, property description and reviews given by the customers across various countries in the world. In this dataset, we will assume the number of reviews to be the number of bookings for any particular Airbnb property.
    
 | Column              | Meaning                                    |
 |---------------------|--------------------------------------------|
 | host_id             | Unique identifier for host                 |
-| property_type       | Type of the airbnb unit                    |
+| property_type       | Type of the Airbnb unit                    |
 | minimum_nights      | Minimum night booking required             |
 | number_of_reviews   | Number of reviews attained by the property |
 | review_score_rating | Rating score out of 100                    |
@@ -77,7 +77,7 @@ if (!file.exists("data/input/airbnb-listings.csv")) {
 
 ### Zipcode and location data for United States
 
-The data comes from SimpleMaps (https://simplemaps.com/) and contains the list of zipcodes, cities and states in the United States. We have taken this dataset to basically map the correct cities to airbnb listings data via zipcode.
+The data comes from SimpleMaps (https://simplemaps.com/) and contains the list of zipcodes, cities and states in the United States. We have taken this dataset to basically map the correct cities to Airbnb listings data via zipcode.
 
 
 | Column              | Meaning                                    |
@@ -220,7 +220,7 @@ file_cna2 <- file_reduced[!is.na(file_reduced$price),]
 file_cna2$host_since <- as.Date(file_cna2$host_since, format = '%Y-%m-%d')
 ```
 
-### Adding column property_id in the airbnb dataset
+### Adding column property_id in the Airbnb dataset
 
 The below code adds a column named 'property_id' which will uniquely identify each property.
 
@@ -321,7 +321,7 @@ dbExecute(con,
 
 ### Table: Host Details
 
-As the airbnb listings dataset can have the same host repeated multiple times, we retieve the unque host details and insert it into host_desc table.
+As the Airbnb listings dataset can have the same host repeated multiple times, we retieve the unque host details and insert it into host_desc table.
 
 ```{r writeTableHostDetails}
 
@@ -417,7 +417,7 @@ dbListTables(con)
 
 ## Get data from database that will be used to do the analysis and plot graphs
 
-This is the first dataset that we retrieve from our database. It summarizes the city wise number of bookings, population and price of the airbnb units.
+This is the first dataset that we retrieve from our database. It summarizes the city wise number of bookings, population and price of the Airbnb units.
 
 ```{r GetDataset1}
 
@@ -467,7 +467,7 @@ dataset2 = dbGetQuery(con, "
 
 **Does the review score rating affect the demand of Airbnb(total listings)? How does it affect the demand? Positively or negatively? Slightly or heavily?**
 
-As part of this question. we want to explore the relationship between the the number of bookings and the rating score given by the customers. According to the graph, it is obvious that the number of bookings and the rating score has a positive effect to each other. From this analysis, we can conclude that the good rating score affects the Airbnb demand. From Airbnb management's perspective, the company can encourage the hosts to improve the quality of their services, which will lead to good review scores as well as an increase in the demand for that airbnb unit.
+As part of this question. we want to explore the relationship between the the number of bookings and the rating score given by the customers. According to the graph, it is obvious that the number of bookings and the rating score has a positive effect to each other. From this analysis, we can conclude that the good rating score affects the Airbnb demand. From Airbnb management's perspective, the company can encourage the hosts to improve the quality of their services, which will lead to good review scores as well as an increase in the demand for that Airbnb unit.
 
 ```{r}
 rating_by_count <- dataset2 %>%
@@ -481,13 +481,13 @@ ggplot(rating_by_count, aes(x = review_score_rating)) + geom_histogram(color = '
 
 **Does price have a significant impact on the demand of Airbnb (total bookings) in NYC? In medium-sized cities? And small-sized ones?**
 
-This graph illustrates the relationship between the demand and price range of airbnb units. We can observe that the price range for highest demand is between $40-$60, and then the demand decreases as the price increases. However, for the price under $40, the demand is lower than the range $40-$120 because the customer may have minimum standard for the safety, quality, etc for the listing. We can conclude that from the Airbnb management perspective, Airbnb can focus on providing more listings in the $40-$100 price range. Furthermore, for the price around $500, it is popular compared to $400 and $600’s listings because the customers are not only looking for economical accommodation, but also the quality and environment of the listings. Therefore, Airbnb can focus on specific customer group, earn profit from customers have high consuming ability.
+This graph illustrates the relationship between the demand and price range of Airbnb units. We can observe that the price range for highest demand is between $40-$60, and then the demand decreases as the price increases. However, for the price under $40, the demand is lower than the range $40-$120 because the customer may have minimum standard for the safety, quality, etc for the listing. We can conclude that from the Airbnb management perspective, Airbnb can focus on providing more listings in the $40-$100 price range. Furthermore, for the price around $500, it is popular compared to $400 and $600’s listings because the customers are not only looking for economical accommodation, but also the quality and environment of the listings. Therefore, Airbnb can focus on specific customer group, earn profit from customers have high consuming ability.
 
 ```{r}
 price_vs_numberReviews <- dataset2 %>%
                     filter(!is.na(price) & !is.na(no_of_bookings))
 
-ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'density', binwidth = 30, col = 'red', fill = 'blue') +labs(x = 'Price (USD)',y='Number of Listings Density') + ggtitle("Popular Price Range for AirBnb Listings")
+ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'density', binwidth = 30, col = 'red', fill = 'blue') +labs(x = 'Price (USD)',y='Number of Listings Density') + ggtitle("Popular Price Range for Airbnb Listings")
 ```
 
 
@@ -495,7 +495,7 @@ ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'density'
 
 **Do cities with larger population lead to more total bookings as compared to cities with lesser population? What is the trend?**
 
-This graph aims to analyze the relationship between the population in the cities and the number of bookings. The darker the color of the bubbles, more is the price of airbnb there. Our assumption for analysis was to identify if the population of a specific city plays any role in affecting the demand or the pricing of airbnbs in that particular city. However, from this graph, we see that the points are quite scattered and there is no consistent relation between population, price and demand. It can be due to outliers in the data as well. We can safely assume a slightly positive correlation between demand (number of bookings) and population. However, we can not make any business perspective suggestions from this analysis.
+This graph aims to analyze the relationship between the population in the cities and the number of bookings. The darker the color of the bubbles, more is the price of Airbnb there. Our assumption for analysis was to identify if the population of a specific city plays any role in affecting the demand or the pricing of Airbnbs in that particular city. However, from this graph, we see that the points are quite scattered and there is no consistent relation between population, price and demand. It can be due to outliers in the data as well. We can safely assume a slightly positive correlation between demand (number of bookings) and population. However, we can not make any business perspective suggestions from this analysis.
 
 
 ```{r}
@@ -536,7 +536,7 @@ We have included sufficient details in our rmd file for each question.
 As a brief conclusion, based on the research and our analysis in this project, we can provide the following business insights to Airbnb.
 1. Encourage more customers to leave positive reviews by offering promos via emails because we could figure out that there is a direct relationship between positive ratings and the number of bookings. 
 2. We also know that renting an entire house or apartment or private room is the most popular option which occupies the most market demand. We suggest Airbnb to add more listings on entire property renting instead of shared-room type. On the other hand, the reason for less demand for shared rooms can be identified and the hosts can work and improve on it.
-3. Based on the relationship between pricing and demand, airbnb can focus on specific consumer group, earn profit from customers having high comsuming ability. This would also depend on the data which helps us analyse the relation between between consumer demographics based on their affluence and the demand for airbnb. However, as this data is unavailable, we cannot comment anything on this perspective of the analysis.
+3. Based on the relationship between pricing and demand, Airbnb can focus on specific consumer group, earn profit from customers having high comsuming ability. This would also depend on the data which helps us analyse the relation between between consumer demographics based on their affluence and the demand for Airbnb. However, as this data is unavailable, we cannot comment anything on this perspective of the analysis.
 
 Thanks for reviewing our project!
 
