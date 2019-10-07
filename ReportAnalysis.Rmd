@@ -23,7 +23,7 @@ dev: svg
 
 What key factors affect the demand of Airbnb in US cities?
 
-We are interested in the business domain of home-sharing services. We decide to work on analyzing some key factors resulting in the different demand among US cities. By knowing analyzing these questions, we believe it will help improve Airbnb’s performance in the cities with low demand.
+We are interested in the business domain of home-sharing services. We decided to work on analyzing some key factors resulting in the different demand among US cities. By analyzing these questions, we believe it will help improve Airbnb’s performance in the cities with low demand.
 
 ## Data
 
@@ -45,7 +45,7 @@ library(stringi)
 
 ### Airbnb listings in US
 
-The data comes from OpenDataSoft  (https://public.opendatasoft.com/explore/dataset/airbnb-listings/table/?disjunctive.host_verifications&disjunctive.amenities&disjunctive.features) and contains the airbnb listing details alongwith host information, property description and reviews given by the customers across various countries in the world. In this dataset, we will assume the number of reviews to be the number of bookings for any particular airbnb property.
+The data comes from OpenDataSoft  (https://public.opendatasoft.com/explore/dataset/airbnb-listings/table/?disjunctive.host_verifications&disjunctive.amenities&disjunctive.features) and contains the airbnb listing details along with host information, property description and reviews given by the customers across various countries in the world. In this dataset, we will assume the number of reviews to be the number of bookings for any particular airbnb property.
    
 | Column              | Meaning                                    |
 |---------------------|--------------------------------------------|
@@ -77,7 +77,7 @@ if (!file.exists("data/input/airbnb-listings.csv")) {
 
 ### Zipcode and location data for United States
 
-The data comes from SimpleMaps (https://simplemaps.com/) and contains the list of zipcodes, cities and states in the United States. We have taken this dataset to basically map the correct cities to airbnb listings data via zipcode.
+The data comes from SimpleMaps (https://simplemaps.com/) and contains the list of zipcodes, cities and states in the United States. We have taken this dataset to map the correct city names to AirBnB listings data via zipcode.
 
 
 | Column              | Meaning                                    |
@@ -253,7 +253,7 @@ if (!file.exists('data/output/population.rds')) {
 
 ### US Zipcodes Data
 
-Here, we keep the entire dataset, just rename teh columns.
+Here, we keep the entire dataset and rename the columns.
 
 
 ```{r readLocation}
@@ -321,7 +321,7 @@ dbExecute(con,
 
 ### Table: Host Details
 
-As the airbnb listings dataset can have the same host repeated multiple times, we retieve the unque host details and insert it into host_desc table.
+As the airbnb listings dataset can have the same host repeated multiple times, we retieve the unique host details and insert it into host_desc table.
 
 ```{r writeTableHostDetails}
 
@@ -351,7 +351,7 @@ dbExecute(con,
 
 ### Table: Property
 
-After inserting this table into the database, teh column property_id is set as the primary key for the table. We also create an index on this column for fast retrieval of data.
+After inserting this table into the database, the column property_id is set as the primary key for the table. We also create an index on this column for fast retrieval of data.
 
 ```{r writeTableProperty}
 
@@ -481,13 +481,17 @@ ggplot(rating_by_count, aes(x = review_score_rating)) + geom_histogram(color = '
 
 **Does price have a significant impact on the demand of Airbnb (total bookings) in NYC? In medium-sized cities? And small-sized ones?**
 
-This graph illustrates the relationship between the demand and price range of airbnb units. We can observe that the price range for highest demand is between $40-$60, and then the demand decreases as the price increases. However, for the price under $40, the demand is lower than the range $40-$120 because the customer may have minimum standard for the safety, quality, etc for the listing. We can conclude that from the Airbnb management perspective, Airbnb can focus on providing more listings in the $40-$100 price range. Furthermore, for the price around $500, it is popular compared to $400 and $600’s listings because the customers are not only looking for economical accommodation, but also the quality and environment of the listings. Therefore, Airbnb can focus on specific customer group, earn profit from customers have high consuming ability.
+This graph illustrates the relationship between the demand and price range of airbnb units. We can observe that the price range for the highest demand is between $40-$60, and then the demand decreases as the price increases. However, for the price under $40, the demand is lower than the range $40-$120 because the customer may have minimum standard for the safety, quality, etc for the listing. We can conclude that from the Airbnb management perspective, Airbnb can focus on providing more listings in the $40-$100 price range. Furthermore, for the price around $500, it is slightly more popular compared to $400 and $450’s listings because the customers are not only looking for economical accommodation, but also the quality and environment of the listings. Therefore, Airbnb can also focus on specific customer group, earning profit from customers have high spending ability.
 
 ```{r}
 price_vs_numberReviews <- dataset2 %>%
-                    filter(!is.na(price) & !is.na(no_of_bookings))
+                          filter(!is.na(price) & !is.na(no_of_bookings) & no_of_bookings != 0) %>%
+                          mutate(cuts = cut(price, c(0,50,100,150,200,250,300,350,400,450,500, Inf)))%>%
+                          group_by(cuts) %>%
+                          summarise(n = n()) %>%
+                          filter(!is.na(cuts))
 
-ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'density', binwidth = 30, col = 'red', fill = 'blue') +labs(x = 'Price (USD)',y='Number of Listings Density') + ggtitle("Popular Price Range for AirBnb Listings")
+ggplot(price_vs_numberReviews, aes(x = cuts, y=n)) + geom_col(fill =  'lightblue') + labs(x = 'Price Range (USD)',y='Number of Listings') + ggtitle("Popular Price Range for AirBnb Listings") + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 
@@ -495,7 +499,7 @@ ggplot(price_vs_numberReviews, aes(x = price)) + geom_histogram(stat = 'density'
 
 **Do cities with larger population lead to more total bookings as compared to cities with lesser population? What is the trend?**
 
-This graph aims to analyze the relationship between the population in the cities and the number of bookings. The darker the color of the bubbles, more is the price of airbnb there. Our assumption for analysis was to identify if the population of a specific city plays any role in affecting the demand or the pricing of airbnbs in that particular city. However, from this graph, we see that the points are quite scattered and there is no consistent relation between population, price and demand. It can be due to outliers in the data as well. We can safely assume a slightly positive correlation between demand (number of bookings) and population. However, we can not make any business perspective suggestions from this analysis.
+This graph aims to analyze the relationship between the population in 20 cities with high number of bookings. The darker the color of the bubbles, more is the price of airbnb there. Our assumption for analysis was to identify if the population of a specific city plays any role in affecting the demand or the pricing of airbnbs in that particular city. However, from this graph, we see that the points are quite scattered and there is no consistent relation between population, price and demand. It can be due to outliers in the data as well. We can safely assume a slightly positive correlation between demand (number of bookings) and population. However, we can not make any business perspective suggestions from this analysis.
 
 
 ```{r}
@@ -519,8 +523,6 @@ minimum_nights_booking <- dataset2 %>%
                     filter(minimum_nights <= 30) %>%
                     group_by(minimum_nights, room_type) %>%
                     summarise(avg_book = mean(no_of_bookings))
-                    #summarise(mean_night = mean(no_of_bookings))
-                    #count(no_of_bookings, minimum_nights)
                     
   
 ggplot(minimum_nights_booking, aes(minimum_nights, avg_book, color = room_type, fill = room_type)) + geom_col() +labs(x ='Minimum Night (Day)', y='Average Ratio of the Number of Bookings') + ggtitle("Length of Stay of Airbnb Users")
@@ -530,7 +532,7 @@ ggplot(minimum_nights_booking, aes(minimum_nights, avg_book, color = room_type, 
 
 ## Conclusions
 
-In this project, we have worked on analyzing the business domain in a big picture, finalizing the industry and a business problem, gathering and preprocessing the data that relates to the problem statement, connecting and creating the database, retrieving data from database and plotting graphs to help us analyze the data visually. We have broken down our general question into four specific questions and tried to answer them in a data-driven way so that we can offer valuable business insights.
+In this project, we have worked on analyzing the business domain in a big picture, analyzing the industry and a business problem, gathering and preprocessing the data that relates to the problem statement, connecting and creating the database, retrieving data from database and plotting graphs to help us analyze the data visually. We have broken down our general question into four specific questions and tried to answer them in a data-driven way so that we can offer valuable business insights.
 We have included sufficient details in our rmd file for each question. 
 
 As a brief conclusion, based on the research and our analysis in this project, we can provide the following business insights to Airbnb.
